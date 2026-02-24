@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -58,30 +59,16 @@ func AuditWrites(fn AuditFn, log *zap.Logger) gin.HandlerFunc {
 // resourceTypeFromPath extracts a resource type string from a Gin route pattern.
 func resourceTypeFromPath(path string) string {
 	switch {
-	case contains(path, "/units"):
+	case strings.Contains(path, "/units"):
 		return "military_unit"
-	case contains(path, "/scenarios") && contains(path, "/branch"):
+	case strings.Contains(path, "/scenarios") && strings.Contains(path, "/branch"):
 		return "scenario_branch"
-	case contains(path, "/scenarios"):
+	case strings.Contains(path, "/scenarios"):
 		return "scenario"
-	case contains(path, "/equipment"):
+	case strings.Contains(path, "/equipment"):
 		return "equipment"
 	default:
 		return "unknown"
 	}
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
-		(len(s) > 0 && indexString(s, sub) >= 0))
-}
-
-func indexString(s, sub string) int {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }
 

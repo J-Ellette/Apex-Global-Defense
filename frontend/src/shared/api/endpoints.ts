@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import { oobClient } from './oobClient'
+import { simClient } from './simClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -15,6 +16,10 @@ import type {
   CreateScenarioRequest,
   UpdateScenarioRequest,
   BranchScenarioRequest,
+  SimulationRun,
+  SimEvent,
+  AfterActionReport,
+  StartRunRequest,
 } from './types'
 
 export const authApi = {
@@ -77,4 +82,32 @@ export const scenarioApi = {
 
   branchScenario: (id: string, data: BranchScenarioRequest) =>
     oobClient.post<Scenario>(`/scenarios/${id}/branch`, data).then((r) => r.data),
+}
+
+export const simApi = {
+  listRuns: (scenarioId: string) =>
+    simClient.get<SimulationRun[]>(`/scenarios/${scenarioId}/runs`).then((r) => r.data),
+
+  startRun: (scenarioId: string, data: StartRunRequest) =>
+    simClient.post<SimulationRun>(`/scenarios/${scenarioId}/runs`, data).then((r) => r.data),
+
+  getRun: (runId: string) =>
+    simClient.get<SimulationRun>(`/runs/${runId}`).then((r) => r.data),
+
+  pauseRun: (runId: string) =>
+    simClient.post<SimulationRun>(`/runs/${runId}/pause`).then((r) => r.data),
+
+  resumeRun: (runId: string) =>
+    simClient.post<SimulationRun>(`/runs/${runId}/resume`).then((r) => r.data),
+
+  stepRun: (runId: string) =>
+    simClient.post<SimEvent>(`/runs/${runId}/step`).then((r) => r.data),
+
+  getEvents: (runId: string, since?: string) =>
+    simClient
+      .get<SimEvent[]>(`/runs/${runId}/events`, { params: since ? { since } : undefined })
+      .then((r) => r.data),
+
+  getReport: (runId: string) =>
+    simClient.get<AfterActionReport>(`/runs/${runId}/report`).then((r) => r.data),
 }

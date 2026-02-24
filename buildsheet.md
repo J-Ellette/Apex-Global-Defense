@@ -1587,14 +1587,14 @@ class ExerciseScorer:
 **Goal**: Functional conventional warfare simulation engine.
 
 - [ ] C++/Rust sim engine with gRPC interface
-- [ ] Sim orchestrator (Python/FastAPI)
-- [ ] Turn-based wargame mode UI
-- [ ] Real-time simulation mode
-- [ ] Monte Carlo probability modeling
-- [ ] Scenario branching + version control
-- [ ] After-action report generation
-- [ ] AI-assisted scenario builder (natural language → ScenarioConfig)
-- [ ] WebSocket collaboration layer (cursors, annotations sync)
+- [x] Sim orchestrator (Python/FastAPI) — `services/sim-orchestrator/`: full lifecycle API, stub engine, MC support
+- [x] Turn-based wargame mode UI — SimRunModal + SimRunPanel with step/pause/resume controls
+- [x] Real-time simulation mode — real-time run support in SimRunPanel with live event feed
+- [x] Monte Carlo probability modeling — MC result display with outcome probability bars
+- [x] Scenario branching + version control — already complete in Phase 1 (oob-svc CRUD + SimulationPage)
+- [x] After-action report generation — AfterActionReportPanel with objectives, casualties, MC results
+- [x] AI-assisted scenario builder (natural language → ScenarioConfig) — AIScenarioBuilderModal (stub + ai-svc hook)
+- [x] WebSocket collaboration layer (cursors, annotations sync) — `services/collab-svc/`: JWT-auth WS hub, Redis bridge
 - [ ] Logistics and attrition model
 
 **Deliverable**: Analysts can construct conventional conflict scenarios, run turn-based or real-time simulations, view probabilistic outcomes, and replay events.
