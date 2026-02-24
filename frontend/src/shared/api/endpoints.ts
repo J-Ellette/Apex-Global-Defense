@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import { oobClient } from './oobClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -26,25 +27,6 @@ export const authApi = {
 
   me: () => apiClient.get<User>('/auth/me').then((r) => r.data),
 }
-
-const OOB_BASE = import.meta.env.VITE_OOB_API_URL ?? '/api/v1'
-
-// Dedicated axios instance pointing at oob-svc (shares interceptors via import of apiClient base).
-// For simplicity in dev we route through the same base; in production Kong proxies both.
-import axios from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
-
-const oobClient = axios.create({
-  baseURL: OOB_BASE,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 30_000,
-})
-
-oobClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
 
 export const oobApi = {
   listCountries: () =>
