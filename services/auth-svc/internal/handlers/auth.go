@@ -19,6 +19,7 @@ type userStore interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
+	WriteAuditLogAsync(action, ip, userAgent string, userID uuid.UUID, payload interface{})
 }
 
 // sessionStore defines the refresh-token session operations.
@@ -103,6 +104,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	_ = h.users.UpdateLastLogin(c.Request.Context(), user.ID)
+	h.users.WriteAuditLogAsync("auth:login", c.ClientIP(), c.GetHeader("User-Agent"), user.ID, gin.H{"email": user.Email})
 
 	c.JSON(http.StatusOK, models.LoginResponse{
 		AccessToken:  access,
@@ -183,6 +185,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	// Best-effort deletion — don't error if the token was already gone.
 	_ = h.sessions.DeleteRefreshToken(c.Request.Context(), req.RefreshToken)
+
+	// Audit logout — user ID not available here without decoding the token, so log anonymously.
+	h.log.Info("audit", zap.String("action", "auth:logout"), zap.String("ip", c.ClientIP()))
 	c.Status(http.StatusNoContent)
 }
 

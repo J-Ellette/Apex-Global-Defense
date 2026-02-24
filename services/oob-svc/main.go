@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
@@ -50,6 +51,18 @@ func main() {
 
 	oobStore := store.NewOOBStore(db)
 	oobHandler := handlers.NewOOBHandler(oobStore, log)
+	scenarioHandler := handlers.NewScenarioHandler(oobStore, log)
+
+	// Audit callback — writes to audit_log table asynchronously.
+	auditFn := func(userID uuid.UUID, action, resourceType, ip, ua string) {
+		oobStore.WriteAuditLogAsync(store.AuditEntry{
+			UserID:       userID,
+			Action:       action,
+			ResourceType: resourceType,
+			IPAddress:    ip,
+			UserAgent:    ua,
+		})
+	}
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -79,9 +92,25 @@ func main() {
 	// Write routes require oob:write permission.
 	write := oob.Group("")
 	write.Use(middleware.RequirePermission("oob:write"))
+	write.Use(middleware.AuditWrites(auditFn, log))
 	write.POST("/units", oobHandler.CreateUnit)
 	write.PUT("/units/:id", oobHandler.UpdateUnit)
 	write.DELETE("/units/:id", oobHandler.DeleteUnit)
+
+	// Scenario routes — read requires scenario:read, write requires scenario:write.
+	scenarios := r.Group("/api/v1/scenarios")
+	scenarios.Use(middleware.JWTAuth(cfg.JWTSecret))
+	scenarios.Use(middleware.RequirePermission("scenario:read"))
+	scenarios.GET("", scenarioHandler.ListScenarios)
+	scenarios.GET("/:id", scenarioHandler.GetScenario)
+
+	scenarioWrite := scenarios.Group("")
+	scenarioWrite.Use(middleware.RequirePermission("scenario:write"))
+	scenarioWrite.Use(middleware.AuditWrites(auditFn, log))
+	scenarioWrite.POST("", scenarioHandler.CreateScenario)
+	scenarioWrite.PUT("/:id", scenarioHandler.UpdateScenario)
+	scenarioWrite.DELETE("/:id", scenarioHandler.DeleteScenario)
+	scenarioWrite.POST("/:id/branch", scenarioHandler.BranchScenario)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

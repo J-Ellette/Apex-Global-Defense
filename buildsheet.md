@@ -1575,11 +1575,11 @@ class ExerciseScorer:
 - [x] Auth service (Keycloak + JWT + RBAC)
 - [x] PostgreSQL + PostGIS schema (countries, units, equipment)
 - [x] OOB service: CRUD API + top 50 nations seeded
-- [ ] Map frontend: Cesium globe, layer panel, basic annotations
-- [ ] Self-hosted tile server (MBTiles OSM base map)
-- [ ] Scenario management: create, save, branch
-- [ ] AI config UI (provider selection, API key entry, fallback toggle)
-- [ ] Basic audit logging
+- [x] Map frontend: MapLibre GL globe, layer panel, basic annotations
+- [x] Self-hosted tile server (MBTiles OSM base map — mbtiles-server in docker-compose, tiles/ directory)
+- [x] Scenario management: create, save, branch (oob-svc CRUD + SimulationPage UI)
+- [x] AI config UI (provider selection, API key entry, fallback toggle — AdminPage)
+- [x] Basic audit logging (oob-svc write middleware + auth-svc login/logout)
 
 **Deliverable**: Web app where analysts can explore a global military OOB on an interactive map, create named scenarios, and configure AI providers.
 

@@ -52,8 +52,10 @@ const (
 type Permission string
 
 const (
-	PermReadOOB  Permission = "oob:read"
-	PermWriteOOB Permission = "oob:write"
+	PermReadOOB      Permission = "oob:read"
+	PermWriteOOB     Permission = "oob:write"
+	PermReadScenario  Permission = "scenario:read"
+	PermWriteScenario Permission = "scenario:write"
 )
 
 // Claims is the JWT payload (must match auth-svc structure).
@@ -161,6 +163,36 @@ type PersonnelSummary struct {
 type CompareResponse struct {
 	CountryA CountryStrength `json:"country_a"`
 	CountryB CountryStrength `json:"country_b"`
+}
+
+// Scenario represents a named planning scenario.
+type Scenario struct {
+	ID             uuid.UUID  `db:"id"             json:"id"`
+	Name           string     `db:"name"           json:"name"`
+	Description    *string    `db:"description"    json:"description,omitempty"`
+	Classification string     `db:"classification" json:"classification"`
+	CreatedBy      uuid.UUID  `db:"created_by"     json:"created_by"`
+	OrgID          uuid.UUID  `db:"org_id"         json:"org_id"`
+	ParentID       *uuid.UUID `db:"parent_id"      json:"parent_id,omitempty"`
+	Tags           []string   `db:"-"              json:"tags"`
+	CreatedAt      time.Time  `db:"created_at"     json:"created_at"`
+	UpdatedAt      time.Time  `db:"updated_at"     json:"updated_at"`
+}
+
+// CreateScenarioRequest is the body for POST /scenarios.
+type CreateScenarioRequest struct {
+	Name           string   `json:"name"           binding:"required"`
+	Description    *string  `json:"description"`
+	Classification string   `json:"classification"`
+	Tags           []string `json:"tags"`
+}
+
+// UpdateScenarioRequest is the body for PUT /scenarios/:id.
+type UpdateScenarioRequest struct {
+	Name           *string  `json:"name"`
+	Description    *string  `json:"description"`
+	Classification *string  `json:"classification"`
+	Tags           []string `json:"tags"`
 }
 
 // EquipmentCatalogItem represents a row in the equipment_catalog table.
