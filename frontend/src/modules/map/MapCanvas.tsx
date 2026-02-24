@@ -3,9 +3,19 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { DrawMode } from './AnnotationToolbar'
 import type { Annotation } from './MapPage'
+import { civilianApi } from '../../shared/api/endpoints'
+import type { PopulationZone, RefugeeFlow, HumanitarianCorridor } from '../../shared/api/types'
 
 const TILE_SERVER = import.meta.env.VITE_TILE_SERVER ?? 'https://tile.openstreetmap.org'
 const AIRGAP      = import.meta.env.VITE_AIRGAP === 'true'
+
+// Density class → circle color (module-level constant, stable reference)
+const DENSITY_COLOR: Record<string, string> = {
+  URBAN: '#0ea5e9',
+  SUBURBAN: '#f59e0b',
+  RURAL: '#22c55e',
+  SPARSE: '#9ca3af',
+}
 
 // Tile URL: air-gap uses local MBTileserver, otherwise falls back to OSM CDN.
 function tileUrl(): string {
@@ -35,6 +45,36 @@ export function MapCanvas({
 
   // Pending text annotation — coordinates waiting for a label
   const [pendingText, setPendingText] = useState<{ coords: [number, number]; label: string } | null>(null)
+
+  // Civilian overlay data
+  const [populationZones, setPopulationZones] = useState<PopulationZone[]>([])
+  const [refugeeFlows, setRefugeeFlows] = useState<RefugeeFlow[]>([])
+  const [humanitarianCorridors, setHumanitarianCorridors] = useState<HumanitarianCorridor[]>([])
+
+  // Fetch civilian data when respective layers become visible
+  useEffect(() => {
+    if (layerVisibility['population-density']) {
+      civilianApi.listZones().then(setPopulationZones).catch((err) => {
+        console.warn('[MapCanvas] Failed to load population zones:', err)
+      })
+    }
+  }, [layerVisibility])
+
+  useEffect(() => {
+    if (layerVisibility['refugee-flows']) {
+      civilianApi.listFlows().then(setRefugeeFlows).catch((err) => {
+        console.warn('[MapCanvas] Failed to load refugee flows:', err)
+      })
+    }
+  }, [layerVisibility])
+
+  useEffect(() => {
+    if (layerVisibility['humanitarian-corridors']) {
+      civilianApi.listCorridors().then(setHumanitarianCorridors).catch((err) => {
+        console.warn('[MapCanvas] Failed to load humanitarian corridors:', err)
+      })
+    }
+  }, [layerVisibility])
 
   // Initialize map
   useEffect(() => {
@@ -113,6 +153,72 @@ export function MapCanvas({
           'text-size': 12,
         },
         paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1 },
+      })
+
+      // Civilian overlay sources (populated via separate useEffects)
+      map.addSource('population-zones', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addSource('refugee-flow-lines', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addSource('corridor-lines', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+
+      map.addLayer({
+        id: 'population-density-fill',
+        type: 'circle',
+        source: 'population-zones',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['get', 'radius_px'], 0, 4, 500, 80],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.35,
+          'circle-stroke-color': ['get', 'color'],
+          'circle-stroke-width': 1,
+          'circle-stroke-opacity': 0.7,
+        },
+        layout: { visibility: 'none' },
+      })
+      map.addLayer({
+        id: 'population-density-label',
+        type: 'symbol',
+        source: 'population-zones',
+        layout: {
+          'text-field': ['concat', ['get', 'name'], '\n', ['get', 'pop_label']],
+          'text-size': 10,
+          'text-offset': [0, 0],
+          'visibility': 'none',
+        },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1 },
+      })
+
+      map.addLayer({
+        id: 'refugee-flows-line',
+        type: 'line',
+        source: 'refugee-flow-lines',
+        paint: {
+          'line-color': '#f59e0b',
+          'line-width': 2,
+          'line-dasharray': [3, 2],
+          'line-opacity': 0.8,
+        },
+        layout: { visibility: 'none' },
+      })
+
+      map.addLayer({
+        id: 'corridor-lines-line',
+        type: 'line',
+        source: 'corridor-lines',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 3,
+          'line-opacity': 0.9,
+        },
+        layout: { visibility: 'none' },
       })
     })
 
@@ -253,14 +359,81 @@ export function MapCanvas({
     // (Handled via GeoJSON symbol layer above)
   }, [annotations])
 
+  // Sync population zone GeoJSON source
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    const features = populationZones.map((z) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [z.longitude, z.latitude] as [number, number] },
+      properties: {
+        name: z.name,
+        pop_label: z.population >= 1_000_000
+          ? `${(z.population / 1_000_000).toFixed(1)}M`
+          : `${(z.population / 1_000).toFixed(0)}K`,
+        radius_px: Math.min(500, z.radius_km * 3),
+        color: DENSITY_COLOR[z.density_class] ?? '#9ca3af',
+      },
+    }))
+    ;(map.getSource('population-zones') as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }, [populationZones])
+
+  // Sync refugee flow GeoJSON source
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    const features = refugeeFlows.map((f) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [f.origin_lon, f.origin_lat] as [number, number],
+          [f.destination_lon, f.destination_lat] as [number, number],
+        ],
+      },
+      properties: { origin: f.origin_name, destination: f.destination_name, displaced: f.displaced_persons },
+    }))
+    ;(map.getSource('refugee-flow-lines') as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }, [refugeeFlows])
+
+  // Sync humanitarian corridor GeoJSON source
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    const CORRIDOR_COLOR: Record<string, string> = { OPEN: '#22c55e', RESTRICTED: '#f59e0b', CLOSED: '#ef4444' }
+    const features = humanitarianCorridors
+      .filter((c) => c.waypoints.length >= 2)
+      .map((c) => ({
+        type: 'Feature' as const,
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: c.waypoints.map((w) => [w.lon, w.lat] as [number, number]),
+        },
+        properties: { name: c.name, status: c.status, color: CORRIDOR_COLOR[c.status] ?? '#9ca3af' },
+      }))
+    ;(map.getSource('corridor-lines') as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }, [humanitarianCorridors])
+
   // Layer visibility + opacity sync
   useEffect(() => {
     const map = mapRef.current
     if (!map || !map.isStyleLoaded()) return
 
     const layerMap: Record<string, string[]> = {
-      'osm-base':     ['osm-base'],
-      'annotations':  ['annotation-polygons-fill', 'annotation-polygons-outline', 'annotation-lines', 'annotation-labels'],
+      'osm-base':                 ['osm-base'],
+      'annotations':              ['annotation-polygons-fill', 'annotation-polygons-outline', 'annotation-lines', 'annotation-labels'],
+      'population-density':       ['population-density-fill', 'population-density-label'],
+      'refugee-flows':            ['refugee-flows-line'],
+      'humanitarian-corridors':   ['corridor-lines-line'],
     }
 
     Object.entries(layerVisibility).forEach(([layerId, visible]) => {

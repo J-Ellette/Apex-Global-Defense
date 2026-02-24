@@ -93,6 +93,12 @@ const MODULE_CARDS = [
     description: 'Site vulnerability assessment, terror threat scenario planning, and multi-agency response coordination.',
   },
   {
+    href: '/civilian',
+    icon: '👥',
+    title: 'Civilian Impact',
+    description: 'Population zone management, conflict civilian impact assessment, refugee flow modeling, and humanitarian corridor tracking.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',

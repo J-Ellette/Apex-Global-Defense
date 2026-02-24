@@ -59,6 +59,18 @@ DISPLACEMENT_MULT = {
     "OBJECTIVE_CAPTURED": 8.0,
 }
 
+# Proximity: events beyond PROXIMITY_RADIUS_FACTOR × zone radius are irrelevant
+PROXIMITY_RADIUS_FACTOR = 3.0
+
+# Wounded-to-killed ratio (field medicine data suggests ~2–3 wounded per KIA)
+WOUNDED_TO_CASUALTY_RATIO = 2.5
+
+# Impact score formula weights and scale
+WOUNDED_WEIGHT = 3        # divisor: wounded contribute 1/3 of a casualty to score
+DISPLACED_WEIGHT = 10     # divisor: 10 displaced ≈ 1 casualty in score
+POPULATION_SCALE = 1000   # score is per 1,000 population
+DAMAGE_RATE_COEFF = 0.15  # fraction of severity × proximity that becomes infra damage
+
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Return distance in km between two lat/lon points."""
@@ -118,28 +130,28 @@ def compute_impact(
             e_lon = float(loc.get("lng", 0.0) or loc.get("lon", 0.0))
             dist_km = _haversine_km(z_lat, z_lon, e_lat, e_lon)
 
-            # Only events within 3× zone radius are relevant
-            if dist_km > z_rad * 3:
+            # Only events within PROXIMITY_RADIUS_FACTOR × zone radius are relevant
+            if dist_km > z_rad * PROXIMITY_RADIUS_FACTOR:
                 continue
 
-            # Proximity factor: 1.0 at center, 0 at 3× radius
-            prox = max(0.0, 1.0 - dist_km / (z_rad * 3))
+            # Proximity factor: 1.0 at center, 0 at PROXIMITY_RADIUS_FACTOR × radius
+            prox = max(0.0, 1.0 - dist_km / (z_rad * PROXIMITY_RADIUS_FACTOR))
             et = event.get("event_type", "")
             severity = EVENT_SEVERITY.get(et, 0.0)
             disp_m = DISPLACEMENT_MULT.get(et, 0.0)
 
-            # Casualties per 1000 pop
-            cas = int(z_pop * severity * density_m * prox / 1000)
-            wnd = max(0, int(cas * 2.5))  # wounded ~ 2.5× killed
-            dsp = int(z_pop * disp_m * density_m * prox / 1000)
-            dmg = min(1.0, severity * prox * density_m * 0.15)
+            # Casualties per POPULATION_SCALE population
+            cas = int(z_pop * severity * density_m * prox / POPULATION_SCALE)
+            wnd = max(0, int(cas * WOUNDED_TO_CASUALTY_RATIO))
+            dsp = int(z_pop * disp_m * density_m * prox / POPULATION_SCALE)
+            dmg = min(1.0, severity * prox * density_m * DAMAGE_RATE_COEFF)
 
             z_casualties += cas
             z_wounded += wnd
             z_displaced += dsp
             z_damage = min(1.0, z_damage + dmg)
 
-        impact_score = min(10.0, (z_casualties + z_wounded / 3 + z_displaced / 10) / max(1, z_pop / 1000))
+        impact_score = min(10.0, (z_casualties + z_wounded / WOUNDED_WEIGHT + z_displaced / DISPLACED_WEIGHT) / max(1, z_pop / POPULATION_SCALE))
 
         zone_impacts.append(
             ZoneImpact(
