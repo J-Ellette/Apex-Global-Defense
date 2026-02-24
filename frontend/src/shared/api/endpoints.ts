@@ -6,6 +6,7 @@ import { cbrnClient } from './cbrnClient'
 import { asymClient } from './asymClient'
 import { terrorClient } from './terrorClient'
 import { intelClient } from './intelClient'
+import { civilianClient } from './civilianClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -77,6 +78,16 @@ import type {
   OSINTSource,
   IngestRequest,
   IngestResult,
+  PopulationZone,
+  CreatePopulationZoneRequest,
+  ImpactAssessment,
+  AssessImpactRequest,
+  RefugeeFlow,
+  CreateRefugeeFlowRequest,
+  UpdateRefugeeFlowRequest,
+  HumanitarianCorridor,
+  CreateCorridorRequest,
+  UpdateCorridorRequest,
 } from './types'
 
 export const authApi = {
@@ -391,4 +402,55 @@ export const intelApi = {
 
   triggerIngestion: (data: IngestRequest) =>
     intelClient.post<IngestResult>('/intel/osint/ingest', data).then((r) => r.data),
+}
+
+export const civilianApi = {
+  // Population zones
+  listZones: (params?: { scenario_id?: string; country_code?: string; limit?: number }) =>
+    civilianClient.get<PopulationZone[]>('/civilian/population', { params }).then((r) => r.data),
+
+  createZone: (data: CreatePopulationZoneRequest) =>
+    civilianClient.post<PopulationZone>('/civilian/population', data).then((r) => r.data),
+
+  getZone: (zoneId: string) =>
+    civilianClient.get<PopulationZone>(`/civilian/population/${zoneId}`).then((r) => r.data),
+
+  deleteZone: (zoneId: string) => civilianClient.delete(`/civilian/population/${zoneId}`),
+
+  // Impact assessment
+  assessImpact: (data: AssessImpactRequest) =>
+    civilianClient.post<ImpactAssessment>('/civilian/impact/assess', data).then((r) => r.data),
+
+  getImpact: (runId: string) =>
+    civilianClient.get<ImpactAssessment>(`/civilian/impact/${runId}`).then((r) => r.data),
+
+  // Refugee flows
+  listFlows: (params?: { scenario_id?: string; status?: string; limit?: number }) =>
+    civilianClient.get<RefugeeFlow[]>('/civilian/flows', { params }).then((r) => r.data),
+
+  createFlow: (data: CreateRefugeeFlowRequest) =>
+    civilianClient.post<RefugeeFlow>('/civilian/flows', data).then((r) => r.data),
+
+  getFlow: (flowId: string) =>
+    civilianClient.get<RefugeeFlow>(`/civilian/flows/${flowId}`).then((r) => r.data),
+
+  updateFlow: (flowId: string, data: UpdateRefugeeFlowRequest) =>
+    civilianClient.put<RefugeeFlow>(`/civilian/flows/${flowId}`, data).then((r) => r.data),
+
+  deleteFlow: (flowId: string) => civilianClient.delete(`/civilian/flows/${flowId}`),
+
+  // Humanitarian corridors
+  listCorridors: (params?: { scenario_id?: string; status?: string }) =>
+    civilianClient.get<HumanitarianCorridor[]>('/civilian/corridors', { params }).then((r) => r.data),
+
+  createCorridor: (data: CreateCorridorRequest) =>
+    civilianClient.post<HumanitarianCorridor>('/civilian/corridors', data).then((r) => r.data),
+
+  getCorridor: (corridorId: string) =>
+    civilianClient.get<HumanitarianCorridor>(`/civilian/corridors/${corridorId}`).then((r) => r.data),
+
+  updateCorridor: (corridorId: string, data: UpdateCorridorRequest) =>
+    civilianClient.put<HumanitarianCorridor>(`/civilian/corridors/${corridorId}`, data).then((r) => r.data),
+
+  deleteCorridor: (corridorId: string) => civilianClient.delete(`/civilian/corridors/${corridorId}`),
 }
