@@ -242,6 +242,86 @@ CBRN module (Phase 3, items 2 + frontend) is **complete**. Next: Insurgent/asymm
 
 ---
 
+## Session 5 — Phase 3 Asymmetric Module (2026-02-24)
+
+### Goal
+Implement the insurgent/asymmetric module: cell structure modeling, IED threat tracking, and COIN planning.
+
+### What I Did This Session
+
+- [x] **Asymmetric module — backend** (`services/asym-svc/`)
+  - Python/FastAPI service on port 8088 (same JWT auth pattern as cbrn-svc)
+  - **Cell Function Catalog** (`app/data/cell_types.py`) — 10 cell type entries across all operational roles:
+    - CMD (Command), OPS (Operations), LOG (Logistics), INT (Intelligence), FIN (Finance)
+    - REC (Recruitment), PROP (Propaganda), SFH (Safe House), MED (Medical), TECH (Technical/IED)
+    - Each entry includes: detection difficulty, interdiction priority, typical size range, icon, color
+  - **IED Type Catalog** (`app/data/ied_types.py`) — 9 IED types across all threat categories:
+    - VBIED, SVBIED (vehicle-borne), PBIED (person-borne/suicide vest)
+    - PLACED_IED, COMMAND_WIRE, RCIED, PRESSURE_PLATE (placed/triggered variants)
+    - EFP (explosively formed penetrator, armor-defeating)
+    - DRONE_IED (emerging aerial IED threat)
+    - Each entry includes: yield, lethal/injury/blast radius, avg casualties, countermeasures
+  - **Cell CRUD** (`app/routers/cells.py`)
+    - `GET /asym/cells` — list with scenario_id / status filters
+    - `POST /asym/cells` — create cell
+    - `GET /asym/cells/{id}` — get cell
+    - `PUT /asym/cells/{id}` — update cell
+    - `DELETE /asym/cells/{id}` — cascade-deletes links
+    - `POST /asym/cell-links` — create inter-cell link
+    - `DELETE /asym/cell-links/{id}` — delete link
+    - `GET /asym/network` — return full cell graph (nodes + edges)
+  - **IED Incident CRUD** (`app/routers/incidents.py`)
+    - `GET /asym/ied-types` — list IED type catalog
+    - `GET /asym/ied-types/{id}` — get single IED type
+    - `GET /asym/incidents` — list with scenario_id / status filters
+    - `POST /asym/incidents` — log new IED incident
+    - `GET /asym/incidents/{id}` — get incident
+    - `PUT /asym/incidents/{id}` — update incident (status, casualties, attribution)
+    - `DELETE /asym/incidents/{id}` — delete incident
+  - **Network Analysis** (`app/routers/analysis.py`)
+    - `GET /asym/network/analysis` — full cell network analysis:
+      - Degree centrality (normalized connectivity per node)
+      - Betweenness centrality (Brandes algorithm, exact, no external dependencies)
+      - Composite hub score (degree + betweenness + operational capability + function priority)
+      - Per-cell interdiction value (1–10), interdiction recommendation text
+      - Network density computation
+      - COIN planning recommendations (decapitation, finance disruption, FININT, counter-radicalization)
+  - `Dockerfile` + `requirements.txt`
+  - 20 unit tests — all passing
+
+- [x] **DB schema** (`db/init/005_asym_schema.sql`)
+  - `asym_cells` — insurgent cell nodes with function, structure, status, location, capability assessments
+  - `asym_cell_links` — cell network edges with link_type, strength, confidence
+  - `asym_ied_incidents` — IED incidents with type, location, status, casualties, attribution
+
+- [x] **Asymmetric module — frontend** (`frontend/src/modules/asym/AsymPage.tsx`)
+  - **Cell Network tab** — cell list with function icons, status badges, capability metrics; add-cell modal with full field set
+  - **IED Threats tab** — IED type catalog cards with detailed specs + countermeasures; incident log with casualties summary; log-incident modal
+  - **COIN Planning tab** — on-demand network analysis; summary stats panel; prioritized COIN recommendations; interdiction priority ranking with hub score bars (red/yellow/green by score)
+
+- [x] Added `asymClient.ts` — Axios client for asym-svc (port 8088, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/asym.ts` — full TypeScript type definitions
+- [x] Added `asymApi` to `endpoints.ts` — all asymmetric operations
+- [x] Updated `frontend/src/shared/api/types/index.ts` — re-exports asym types
+- [x] Updated `frontend/src/app/router.tsx` — added `/asym` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added Asymmetric/Insurgency module card
+- [x] Updated `docker-compose.dev.yml` — added `asym-svc` (port 8088) + `VITE_ASYM_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — insurgent/asymmetric module marked done
+
+### Stopping Point
+
+Insurgent/asymmetric module (Phase 3, item 3) is **complete**. Next: Terror response planning module.
+
+### What's Next (Session 6 — Phase 3 continued)
+
+- [ ] Terror response planning module
+- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
+- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+- [ ] Elasticsearch + semantic search (pgvector)
+- [ ] Civilian impact overlays (population, refugee modeling)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -252,6 +332,7 @@ CBRN module (Phase 3, items 2 + frontend) is **complete**. Next: Insurgent/asymm
 | collab-svc | 8084 | Go | ✅ Session 1 |
 | cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 |
 | cbrn-svc | 8087 | Python/FastAPI | ✅ Session 4 |
+| asym-svc | 8088 | Python/FastAPI | ✅ Session 5 |
 | map-svc | — | Go | ⏳ Future |
 | intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
@@ -267,3 +348,4 @@ CBRN module (Phase 3, items 2 + frontend) is **complete**. Next: Insurgent/asymm
 - **Sim orchestrator**: `http://localhost:8085/api/v1` (consumed by frontend `VITE_SIM_API_URL`)
 - **Cyber svc**: `http://localhost:8086/api/v1` (consumed by frontend `VITE_CYBER_API_URL`)
 - **CBRN svc**: `http://localhost:8087/api/v1` (consumed by frontend `VITE_CBRN_API_URL`)
+- **Asym svc**: `http://localhost:8088/api/v1` (consumed by frontend `VITE_ASYM_API_URL`)

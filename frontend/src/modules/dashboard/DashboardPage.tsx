@@ -81,6 +81,12 @@ const MODULE_CARDS = [
     description: 'Chemical, biological, radiological, and nuclear agent catalog, release planning, and Gaussian plume dispersion modeling.',
   },
   {
+    href: '/asym',
+    icon: '🕸️',
+    title: 'Asymmetric / Insurgency',
+    description: 'Insurgent cell network modeling, IED threat tracking, and COIN (counter-insurgency) planning.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',

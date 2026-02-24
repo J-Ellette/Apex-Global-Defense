@@ -3,6 +3,7 @@ import { oobClient } from './oobClient'
 import { simClient } from './simClient'
 import { cyberClient } from './cyberClient'
 import { cbrnClient } from './cbrnClient'
+import { asymClient } from './asymClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -39,6 +40,18 @@ import type {
   CBRNRelease,
   CreateReleaseRequest,
   DispersionSimulation,
+  IEDCategory,
+  IEDTypeEntry,
+  InsurgentCell,
+  CreateCellRequest,
+  UpdateCellRequest,
+  CellLink,
+  CreateCellLinkRequest,
+  CellNetwork,
+  IEDIncident,
+  CreateIncidentRequest,
+  UpdateIncidentRequest,
+  NetworkAnalysis,
 } from './types'
 
 export const authApi = {
@@ -200,4 +213,67 @@ export const cbrnApi = {
 
   getSimulation: (releaseId: string) =>
     cbrnClient.get<DispersionSimulation>(`/cbrn/releases/${releaseId}/simulation`).then((r) => r.data),
+}
+
+export const asymApi = {
+  // Cell function catalog (static)
+  listCellTypes: () =>
+    asymClient.get('/asym/cell-types').then((r) => r.data),
+
+  // IED type catalog (static)
+  listIEDTypes: (params?: { category?: IEDCategory }) =>
+    asymClient.get<IEDTypeEntry[]>('/asym/ied-types', { params }).then((r) => r.data),
+
+  getIEDType: (typeId: string) =>
+    asymClient.get<IEDTypeEntry>(`/asym/ied-types/${typeId}`).then((r) => r.data),
+
+  // Insurgent cells
+  listCells: (params?: { scenario_id?: string; status?: string }) =>
+    asymClient.get<InsurgentCell[]>('/asym/cells', { params }).then((r) => r.data),
+
+  createCell: (data: CreateCellRequest) =>
+    asymClient.post<InsurgentCell>('/asym/cells', data).then((r) => r.data),
+
+  getCell: (cellId: string) =>
+    asymClient.get<InsurgentCell>(`/asym/cells/${cellId}`).then((r) => r.data),
+
+  updateCell: (cellId: string, data: UpdateCellRequest) =>
+    asymClient.put<InsurgentCell>(`/asym/cells/${cellId}`, data).then((r) => r.data),
+
+  deleteCell: (cellId: string) => asymClient.delete(`/asym/cells/${cellId}`),
+
+  // Cell links
+  createCellLink: (data: CreateCellLinkRequest) =>
+    asymClient.post<CellLink>('/asym/cell-links', data).then((r) => r.data),
+
+  deleteCellLink: (linkId: string) => asymClient.delete(`/asym/cell-links/${linkId}`),
+
+  // Cell network
+  getNetwork: (scenarioId?: string) =>
+    asymClient
+      .get<CellNetwork>('/asym/network', { params: scenarioId ? { scenario_id: scenarioId } : undefined })
+      .then((r) => r.data),
+
+  // Network analysis
+  analyzeNetwork: (scenarioId?: string) =>
+    asymClient
+      .get<NetworkAnalysis>('/asym/network/analysis', {
+        params: scenarioId ? { scenario_id: scenarioId } : undefined,
+      })
+      .then((r) => r.data),
+
+  // IED incidents
+  listIncidents: (params?: { scenario_id?: string; status?: string }) =>
+    asymClient.get<IEDIncident[]>('/asym/incidents', { params }).then((r) => r.data),
+
+  createIncident: (data: CreateIncidentRequest) =>
+    asymClient.post<IEDIncident>('/asym/incidents', data).then((r) => r.data),
+
+  getIncident: (incidentId: string) =>
+    asymClient.get<IEDIncident>(`/asym/incidents/${incidentId}`).then((r) => r.data),
+
+  updateIncident: (incidentId: string, data: UpdateIncidentRequest) =>
+    asymClient.put<IEDIncident>(`/asym/incidents/${incidentId}`, data).then((r) => r.data),
+
+  deleteIncident: (incidentId: string) => asymClient.delete(`/asym/incidents/${incidentId}`),
 }

@@ -1604,7 +1604,7 @@ class ExerciseScorer:
 
 - [x] Cyber module (ATT&CK mapping, infrastructure graph)
 - [x] CBRN dispersion modeling (HYSPLIT integration)
-- [ ] Insurgent/asymmetric module (cell structure, IED threat)
+- [x] Insurgent/asymmetric module (cell structure, IED threat)
 - [ ] Terror response planning module
 - [ ] AI-assisted intel analysis (entity extraction, threat assessment)
 - [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
