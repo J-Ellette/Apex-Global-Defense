@@ -173,6 +173,75 @@ Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
 
 ---
 
+## Session 4 — Phase 3 Continued: CBRN Module (2026-02-24)
+
+### Goal
+Implement CBRN dispersion modeling (Phase 3, item 2): agent catalog, release planning, Gaussian plume dispersion simulation, casualty estimation, and frontend UI.
+
+### What I Did This Session
+
+- [x] **CBRN module — backend** (`services/cbrn-svc/`)
+  - Python/FastAPI service on port 8087 (same JWT auth pattern as cyber-svc)
+  - **Agent Catalog** (`app/data/agents.py`) — 11 representative agents across all 4 CBRN categories:
+    - **Chemical**: VX (nerve), GB/Sarin (nerve), HD/Mustard Gas (blister), Chlorine (choking), HCN (blood)
+    - **Biological**: Anthrax spores, Botulinum toxin type A, Plague (Y. pestis)
+    - **Radiological**: Cesium-137 (dirty bomb), Cobalt-60
+    - **Nuclear**: IND 10 kT, IND 100 kT
+    - Each agent includes: casualty thresholds (LCt50, ICt50, IDLH), physical properties, half-life, NATO code, protective action guidance
+  - **Gaussian Plume Engine** (`app/engine/plume.py`) — HYSPLIT-inspired dispersion model:
+    - Pasquill-Gifford stability classes A–F with proper σy/σz dispersion coefficients
+    - Steady-state Gaussian plume equation with ground reflection and mixing layer
+    - Atmospheric mixing layer reflection model
+    - Plume contour polygon generation (isoline at lethal/incapacitating/IDLH thresholds)
+    - `_latlon_offset()` — converts (x_m, y_m) plume coordinates to WGS-84 lat/lon
+    - Casualty estimation: area × population density × affected fraction
+    - Fallback hazard zone for bio/nuclear agents without Ct thresholds
+  - **Release CRUD** (`app/routers/releases.py`) — DB-backed release event management
+    - `GET /cbrn/releases` — list with optional scenario_id filter
+    - `POST /cbrn/releases` — create release (validates agent, stores met conditions as JSONB)
+    - `GET /cbrn/releases/{id}` — get release
+    - `DELETE /cbrn/releases/{id}` — delete release + cascade simulations
+    - `POST /cbrn/releases/{id}/simulate` — run plume model, persist result, return DispersionSimulation
+    - `GET /cbrn/releases/{id}/simulation` — retrieve cached simulation result
+  - **Agent endpoints** (`app/routers/agents.py`)
+    - `GET /cbrn/agents` — list with category + full-text search filters
+    - `GET /cbrn/agents/{id}` — get single agent
+  - `Dockerfile` + `requirements.txt` (fastapi, asyncpg, python-jose, pydantic, numpy)
+  - 15 unit tests — all passing
+
+- [x] **DB schema** (`db/init/004_cbrn_schema.sql`)
+  - `cbrn_releases` — release events with agent_id, met JSONB, population density
+  - `cbrn_simulations` — simulation results (JSONB) with unique constraint on release_id (upsert on re-simulate)
+
+- [x] **CBRN module — frontend** (`frontend/src/modules/cbrn/CBRNPage.tsx`)
+  - **Agent Catalog tab** — searchable/filterable card list; detail side panel with casualty thresholds (LCt50/ICt50/IDLH/LD50), NATO code, protective action, map color
+  - **Release Planner tab** — create release form with full met conditions input (wind speed/direction, stability class A–F, mixing height, temperature, humidity); release card list with 🌬️ Simulate button
+  - **Dispersion Results tab** — run dispersion model; display plume metrics (max downwind/crosswind km, area km², estimated casualties); hazard zone cards (Lethal/Injury/IDLH) with estimated casualties; met summary; plume contour polygon summary; protective actions panel
+
+- [x] Added `cbrnClient.ts` — Axios client for cbrn-svc (port 8087, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/cbrn.ts` — full TypeScript type definitions
+- [x] Added `cbrnApi` to `endpoints.ts` — all CBRN operations
+- [x] Updated `frontend/src/shared/api/types/index.ts` — re-exports cbrn types
+- [x] Updated `frontend/src/app/router.tsx` — added `/cbrn` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added CBRN Operations module card
+- [x] Updated `docker-compose.dev.yml` — added `cbrn-svc` (port 8087) + `VITE_CBRN_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — CBRN dispersion + frontend marked done
+
+### Stopping Point
+
+CBRN module (Phase 3, items 2 + frontend) is **complete**. Next: Insurgent/asymmetric module.
+
+### What's Next (Session 5 — Phase 3 continued)
+
+- [ ] Insurgent/asymmetric module (cell structure, IED threat)
+- [ ] Terror response planning module
+- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
+- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+- [ ] Elasticsearch + semantic search (pgvector)
+- [ ] Civilian impact overlays (population, refugee modeling)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -182,6 +251,7 @@ Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
 | sim-orchestrator | 8085 | Python/FastAPI | ✅ Session 1–2 |
 | collab-svc | 8084 | Go | ✅ Session 1 |
 | cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 |
+| cbrn-svc | 8087 | Python/FastAPI | ✅ Session 4 |
 | map-svc | — | Go | ⏳ Future |
 | intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
@@ -194,4 +264,6 @@ Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
 - **Database**: `postgres://agd:devpass@postgres:5432/agd_dev`
 - **Redis**: `redis://redis:6379`
 - **Collab WS URL**: `ws://localhost:8084` (consumed by frontend `VITE_WS_URL`)
-- **Sim orchestrator**: `http://localhost:8085/api/v1` (to be added to frontend env)
+- **Sim orchestrator**: `http://localhost:8085/api/v1` (consumed by frontend `VITE_SIM_API_URL`)
+- **Cyber svc**: `http://localhost:8086/api/v1` (consumed by frontend `VITE_CYBER_API_URL`)
+- **CBRN svc**: `http://localhost:8087/api/v1` (consumed by frontend `VITE_CBRN_API_URL`)

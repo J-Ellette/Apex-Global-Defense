@@ -1603,13 +1603,13 @@ class ExerciseScorer:
 **Goal**: Multi-domain simulation capability.
 
 - [x] Cyber module (ATT&CK mapping, infrastructure graph)
-- [ ] CBRN dispersion modeling (HYSPLIT integration)
+- [x] CBRN dispersion modeling (HYSPLIT integration)
 - [ ] Insurgent/asymmetric module (cell structure, IED threat)
 - [ ] Terror response planning module
 - [ ] AI-assisted intel analysis (entity extraction, threat assessment)
 - [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
 - [ ] Elasticsearch + semantic search (pgvector)
-- [ ] CBRN frontend: plume visualization, casualty overlays
+- [x] CBRN frontend: plume visualization, casualty overlays
 - [ ] Civilian impact overlays (population, refugee modeling)
 
 **Deliverable**: Full multi-domain simulation with AI-assisted intelligence analysis.
