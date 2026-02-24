@@ -122,14 +122,32 @@ services:
       redis:
         condition: service_healthy
 
+  oob-svc:
+    build:
+      context: ./services/oob-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://agd:devpass@postgres:5432/agd_dev?sslmode=disable
+      JWT_SECRET: dev-secret-change-in-prod
+      PORT: "8080"
+      ENV: development
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     environment:
       VITE_API_URL: http://localhost:8082/api/v1
+      VITE_OOB_API_URL: http://localhost:8083/api/v1
       VITE_TILE_SERVER: http://localhost:8081
-      VITE_WS_URL: ws://localhost:8083
+      VITE_WS_URL: ws://localhost:8084
       VITE_AIRGAP: "false"
     ports:
       - "5173:5173"

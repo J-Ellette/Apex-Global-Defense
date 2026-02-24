@@ -1574,7 +1574,7 @@ class ExerciseScorer:
 - [x] Project scaffold: monorepo, CI/CD, dev Docker Compose
 - [x] Auth service (Keycloak + JWT + RBAC)
 - [x] PostgreSQL + PostGIS schema (countries, units, equipment)
-- [ ] OOB service: CRUD API + top 50 nations seeded
+- [x] OOB service: CRUD API + top 50 nations seeded
 - [ ] Map frontend: Cesium globe, layer panel, basic annotations
 - [ ] Self-hosted tile server (MBTiles OSM base map)
 - [ ] Scenario management: create, save, branch

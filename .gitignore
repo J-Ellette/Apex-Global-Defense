@@ -13,6 +13,7 @@ build/
 *.out
 coverage.out
 coverage.html
+*.tsbuildinfo
 
 # Environment files
 .env
