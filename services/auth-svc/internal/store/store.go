@@ -117,3 +117,20 @@ func (s *SessionStore) DeleteRefreshToken(ctx context.Context, token string) err
 	key := fmt.Sprintf("session:%s", token)
 	return s.rdb.Del(ctx, key)
 }
+
+// WriteAuditLogAsync appends an audit event to audit_log asynchronously.
+// It is best-effort — errors are silently discarded to avoid blocking auth flows.
+func (s *UserStore) WriteAuditLogAsync(action, ip, userAgent string, userID uuid.UUID, payload interface{}) {
+go func() {
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+payloadJSON, _ := json.Marshal(payload)
+_, _ = s.db.ExecContext(ctx, `
+INSERT INTO audit_log
+    (user_id, action, resource_type, classification, ip_address, user_agent, payload)
+VALUES ($1, $2, 'auth', 'UNCLASS', $3::inet, $4, $5)`,
+userID, action, ip, userAgent, payloadJSON,
+)
+}()
+}

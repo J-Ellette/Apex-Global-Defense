@@ -40,6 +40,8 @@ func (f *fakeUserStore) GetByID(_ context.Context, id uuid.UUID) (*models.User, 
 
 func (f *fakeUserStore) UpdateLastLogin(_ context.Context, _ uuid.UUID) error { return nil }
 
+func (f *fakeUserStore) WriteAuditLogAsync(_, _, _ string, _ uuid.UUID, _ interface{}) {}
+
 type fakeSessionStore struct {
 	tokens map[string]uuid.UUID
 }

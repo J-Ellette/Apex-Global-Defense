@@ -11,6 +11,10 @@ import type {
   CompareRequest,
   CompareResponse,
   EquipmentCatalogItem,
+  Scenario,
+  CreateScenarioRequest,
+  UpdateScenarioRequest,
+  BranchScenarioRequest,
 } from './types'
 
 export const authApi = {
@@ -54,4 +58,23 @@ export const oobApi = {
 
   listEquipmentCatalog: () =>
     oobClient.get<EquipmentCatalogItem[]>('/oob/equipment/catalog').then((r) => r.data),
+}
+
+export const scenarioApi = {
+  listScenarios: () =>
+    oobClient.get<Scenario[]>('/scenarios').then((r) => r.data),
+
+  getScenario: (id: string) =>
+    oobClient.get<Scenario>(`/scenarios/${id}`).then((r) => r.data),
+
+  createScenario: (data: CreateScenarioRequest) =>
+    oobClient.post<Scenario>('/scenarios', data).then((r) => r.data),
+
+  updateScenario: (id: string, data: UpdateScenarioRequest) =>
+    oobClient.put<Scenario>(`/scenarios/${id}`, data).then((r) => r.data),
+
+  deleteScenario: (id: string) => oobClient.delete(`/scenarios/${id}`),
+
+  branchScenario: (id: string, data: BranchScenarioRequest) =>
+    oobClient.post<Scenario>(`/scenarios/${id}/branch`, data).then((r) => r.data),
 }
