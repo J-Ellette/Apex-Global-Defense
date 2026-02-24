@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #0ea5e9;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-success: #22c55e;
+}
+
+body {
+  @apply bg-gray-950 text-gray-100 font-sans antialiased;
+}
+
+/* Classification banner colors */
+.banner-unclass    { @apply bg-green-700 text-white; }
+.banner-fouo       { @apply bg-blue-700 text-white; }
+.banner-secret     { @apply bg-red-700 text-white; }
+.banner-top-secret { @apply bg-orange-600 text-white; }
+.banner-ts-sci     { @apply bg-yellow-500 text-black; }

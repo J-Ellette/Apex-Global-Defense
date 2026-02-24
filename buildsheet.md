@@ -1571,9 +1571,9 @@ class ExerciseScorer:
 ### Phase 1 — MVP (Months 1–6)
 **Goal**: Working geospatial platform with OOB data and basic user management.
 
-- [ ] Project scaffold: monorepo, CI/CD, dev Docker Compose
-- [ ] Auth service (Keycloak + JWT + RBAC)
-- [ ] PostgreSQL + PostGIS schema (countries, units, equipment)
+- [x] Project scaffold: monorepo, CI/CD, dev Docker Compose
+- [x] Auth service (Keycloak + JWT + RBAC)
+- [x] PostgreSQL + PostGIS schema (countries, units, equipment)
 - [ ] OOB service: CRUD API + top 50 nations seeded
 - [ ] Map frontend: Cesium globe, layer panel, basic annotations
 - [ ] Self-hosted tile server (MBTiles OSM base map)
