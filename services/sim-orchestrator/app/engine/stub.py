@@ -11,12 +11,14 @@ import math
 import random
 import uuid
 from datetime import datetime, timedelta
-from typing import AsyncIterator
 
 from app.models import (
     AfterActionReport,
     CasualtyDistribution,
     EventType,
+    ForceSummary,
+    LogisticsState,
+    LogisticsSummary,
     MCResult,
     OutcomeDistribution,
     ScenarioConfig,
@@ -24,6 +26,7 @@ from app.models import (
     SimMode,
     SimState,
     SimStatus,
+    SupplyLevels,
 )
 
 
@@ -47,6 +50,7 @@ _EVENT_TEMPLATES = [
     (EventType.SUPPLY_CONSUMED, "Resupply consumed"),
     (EventType.AIRSTRIKE, "Airstrike executed"),
     (EventType.OBJECTIVE_CAPTURED, "Objective captured"),
+    (EventType.RESUPPLY, "Resupply convoy arrived"),
 ]
 
 
@@ -117,6 +121,11 @@ def generate_run_events(
             elif etype == EventType.OBJECTIVE_CAPTURED:
                 payload["objective"] = f"OBJ-{rng.randint(1, 6)}"
                 payload["side"] = rng.choice(["BLUE", "RED"])
+            elif etype == EventType.RESUPPLY:
+                payload["side"] = rng.choice(["BLUE", "RED"])
+                payload["ammo_restored"] = round(rng.uniform(0.10, 0.25), 3)
+                payload["fuel_restored"] = round(rng.uniform(0.10, 0.20), 3)
+                payload["rations_restored"] = round(rng.uniform(0.05, 0.15), 3)
 
             events.append(
                 SimEvent(
@@ -131,6 +140,109 @@ def generate_run_events(
             )
 
     return events
+
+
+# ---------------------------------------------------------------------------
+# Logistics & Attrition model
+# ---------------------------------------------------------------------------
+
+# Base supply drain per turn (fraction of total supply consumed)
+_BASE_DRAIN_PER_TURN = 0.06
+
+
+def _compute_force_summary(
+    side: str,
+    rng: random.Random,
+    events: list[SimEvent],
+    config: ScenarioConfig,
+    n_force_units: int,
+) -> ForceSummary:
+    """Derive force supply and attrition from accumulated sim events."""
+    weather_penalty = 1.0 - _WEATHER_MODIFIERS.get(config.weather_preset, 1.0)
+    turns_elapsed = max((e.turn_number or 0) for e in events) if events else 0
+
+    # Tally events that affect this force's supply
+    supply_drain = 0.0
+    resupply_ammo = 0.0
+    resupply_fuel = 0.0
+    resupply_rations = 0.0
+    kia = 0
+    n_engagements = 0
+    n_airstrikes = 0
+
+    kia_key = f"{side.lower()}_casualties"
+
+    for e in events:
+        if e.event_type == EventType.SUPPLY_CONSUMED:
+            supply_drain += 0.03 + weather_penalty * 0.01
+        elif e.event_type == EventType.RESUPPLY and e.payload.get("side") == side:
+            resupply_ammo += e.payload.get("ammo_restored", 0.0)
+            resupply_fuel += e.payload.get("fuel_restored", 0.0)
+            resupply_rations += e.payload.get("rations_restored", 0.0)
+        elif e.event_type in (EventType.CASUALTY, EventType.ENGAGEMENT):
+            kia += e.payload.get(kia_key, 0)
+        if e.event_type == EventType.ENGAGEMENT:
+            n_engagements += 1
+        elif e.event_type == EventType.AIRSTRIKE:
+            n_airstrikes += 1
+
+    # Baseline drain from time elapsed + weather
+    base_drain = turns_elapsed * (_BASE_DRAIN_PER_TURN + weather_penalty * 0.02)
+    total_ammo_drain = min(1.0, base_drain + n_engagements * 0.025 + supply_drain)
+    total_fuel_drain = min(1.0, base_drain * 0.85 + supply_drain)
+    total_rations_drain = min(1.0, base_drain * 0.4 + supply_drain * 0.3)
+
+    ammo = max(0.0, round(1.0 - total_ammo_drain + resupply_ammo, 3))
+    fuel = max(0.0, round(1.0 - total_fuel_drain + resupply_fuel, 3))
+    rations = max(0.0, round(1.0 - total_rations_drain + resupply_rations, 3))
+
+    # Attrition
+    initial_strength = max(200, n_force_units * 150)
+    wia = int(kia * 2.3)
+    strength_pct = max(0.05, round(1.0 - kia / max(1, initial_strength), 3))
+
+    # Equipment losses driven by engagements + airstrikes + some RNG
+    equipment_rng = random.Random(rng.random())
+    armor_losses = equipment_rng.randint(0, max(0, n_engagements * 2))
+    arty_losses = equipment_rng.randint(0, max(0, n_engagements))
+    air_losses = equipment_rng.randint(0, max(0, n_airstrikes))
+
+    return ForceSummary(
+        strength_pct=min(1.0, strength_pct),
+        kia=kia,
+        wia=wia,
+        supply=SupplyLevels(ammo=min(1.0, ammo), fuel=min(1.0, fuel), rations=min(1.0, rations)),
+        equipment_losses={"armor": armor_losses, "artillery": arty_losses, "aircraft": air_losses},
+    )
+
+
+def generate_logistics_state(
+    run_id: uuid.UUID,
+    config: ScenarioConfig,
+    events: list[SimEvent],
+    turn_number: int,
+) -> LogisticsState:
+    """Compute logistics state up to the given turn from accumulated events."""
+    turn_events = [e for e in events if (e.turn_number or 0) <= turn_number]
+
+    rng = random.Random(hash(str(run_id)) % (2 ** 31))
+
+    blue = _compute_force_summary(
+        "BLUE", rng, turn_events, config, len(config.blue_force_ids)
+    )
+    red = _compute_force_summary(
+        "RED", rng, turn_events, config, len(config.red_force_ids)
+    )
+
+    sim_time = config.start_time + timedelta(hours=turn_number * 4)
+
+    return LogisticsState(
+        run_id=run_id,
+        turn_number=turn_number,
+        sim_time=sim_time,
+        blue=blue,
+        red=red,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -257,6 +369,19 @@ def build_after_action_report(
         )
     ][:10]
 
+    # Build logistics summary from final turn
+    logistics = generate_logistics_state(run_id, config, events, turns)
+    logistics_summary = LogisticsSummary(
+        blue_final_strength_pct=logistics.blue.strength_pct,
+        red_final_strength_pct=logistics.red.strength_pct,
+        blue_total_kia=logistics.blue.kia,
+        red_total_kia=logistics.red.kia,
+        blue_supply=logistics.blue.supply,
+        red_supply=logistics.red.supply,
+        blue_equipment_losses=logistics.blue.equipment_losses,
+        red_equipment_losses=logistics.red.equipment_losses,
+    )
+
     return AfterActionReport(
         run_id=run_id,
         scenario_id=scenario_id,
@@ -270,4 +395,5 @@ def build_after_action_report(
         red_casualties=red_cas,
         key_events=key_events,
         mc_result=mc_result,
+        logistics_summary=logistics_summary,
     )

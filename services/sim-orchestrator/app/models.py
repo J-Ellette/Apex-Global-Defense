@@ -58,6 +58,7 @@ class EventType(str, Enum):
     ENGAGEMENT = "ENGAGEMENT"
     CASUALTY = "CASUALTY"
     SUPPLY_CONSUMED = "SUPPLY_CONSUMED"
+    RESUPPLY = "RESUPPLY"
     OBJECTIVE_CAPTURED = "OBJECTIVE_CAPTURED"
     AIRSTRIKE = "AIRSTRIKE"
     NAVAL_ACTION = "NAVAL_ACTION"
@@ -113,6 +114,7 @@ class AfterActionReport(BaseModel):
     red_casualties: int
     key_events: list[SimEvent]
     mc_result: MCResult | None = None
+    logistics_summary: "LogisticsSummary | None" = None
 
 
 class SimState(BaseModel):
@@ -124,3 +126,40 @@ class SimState(BaseModel):
     blue_unit_count: int
     red_unit_count: int
     objectives_status: dict[str, str]  # objective_id → BLUE/RED/CONTESTED
+
+
+# ---------------------------------------------------------------------------
+# Logistics & Attrition models
+# ---------------------------------------------------------------------------
+
+class SupplyLevels(BaseModel):
+    ammo: float = Field(ge=0.0, le=1.0)     # fraction remaining (0=empty, 1=full)
+    fuel: float = Field(ge=0.0, le=1.0)
+    rations: float = Field(ge=0.0, le=1.0)
+
+
+class ForceSummary(BaseModel):
+    strength_pct: float = Field(ge=0.0, le=1.0)   # current / initial strength
+    kia: int
+    wia: int
+    supply: SupplyLevels
+    equipment_losses: dict[str, int]   # category → count (armor, artillery, aircraft)
+
+
+class LogisticsState(BaseModel):
+    run_id: UUID
+    turn_number: int
+    sim_time: datetime
+    blue: ForceSummary
+    red: ForceSummary
+
+
+class LogisticsSummary(BaseModel):
+    blue_final_strength_pct: float
+    red_final_strength_pct: float
+    blue_total_kia: int
+    red_total_kia: int
+    blue_supply: SupplyLevels
+    red_supply: SupplyLevels
+    blue_equipment_losses: dict[str, int]
+    red_equipment_losses: dict[str, int]
