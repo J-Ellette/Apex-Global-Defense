@@ -7,6 +7,7 @@ export type SimEventType =
   | 'ENGAGEMENT'
   | 'CASUALTY'
   | 'SUPPLY_CONSUMED'
+  | 'RESUPPLY'
   | 'OBJECTIVE_CAPTURED'
   | 'AIRSTRIKE'
   | 'NAVAL_ACTION'
@@ -75,6 +76,40 @@ export interface MCResult {
   duration_distribution: number[]
 }
 
+// Logistics & Attrition types
+export interface SupplyLevels {
+  ammo: number    // 0.0 – 1.0 fraction remaining
+  fuel: number
+  rations: number
+}
+
+export interface ForceSummary {
+  strength_pct: number   // 0.0 – 1.0
+  kia: number
+  wia: number
+  supply: SupplyLevels
+  equipment_losses: Record<string, number>  // armor / artillery / aircraft → count
+}
+
+export interface LogisticsState {
+  run_id: string
+  turn_number: number
+  sim_time: string
+  blue: ForceSummary
+  red: ForceSummary
+}
+
+export interface LogisticsSummary {
+  blue_final_strength_pct: number
+  red_final_strength_pct: number
+  blue_total_kia: number
+  red_total_kia: number
+  blue_supply: SupplyLevels
+  red_supply: SupplyLevels
+  blue_equipment_losses: Record<string, number>
+  red_equipment_losses: Record<string, number>
+}
+
 export interface AfterActionReport {
   run_id: string
   scenario_id: string
@@ -88,6 +123,7 @@ export interface AfterActionReport {
   red_casualties: number
   key_events: SimEvent[]
   mc_result?: MCResult
+  logistics_summary?: LogisticsSummary
 }
 
 export interface StartRunRequest {

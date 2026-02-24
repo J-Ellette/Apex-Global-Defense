@@ -13,6 +13,7 @@ import type {
   SimEvent,
   AfterActionReport,
   ScenarioRunConfig,
+  LogisticsState,
 } from '../../shared/api/types'
 
 export default function SimulationPage() {
@@ -183,6 +184,7 @@ function SimRunPanel({
   onClose: () => void
 }) {
   const [showReport, setShowReport] = useState(false)
+  const [showLogistics, setShowLogistics] = useState(false)
 
   const pauseMutation = useMutation({
     mutationFn: () => simApi.pauseRun(run.id),
@@ -209,6 +211,13 @@ function SimRunPanel({
     queryKey: ['sim-report', run.id],
     queryFn: () => simApi.getReport(run.id),
     enabled: showReport && run.status === 'complete',
+  })
+
+  const { data: logistics } = useQuery({
+    queryKey: ['sim-logistics', run.id],
+    queryFn: () => simApi.getLogistics(run.id),
+    refetchInterval: run.status === 'running' ? 5000 : false,
+    enabled: showLogistics && run.status !== 'queued',
   })
 
   const statusColor: Record<string, string> = {
@@ -287,6 +296,19 @@ function SimRunPanel({
               📋 {showReport ? 'Hide' : 'After-Action Report'}
             </button>
           )}
+          {run.status !== 'queued' && (
+            <button
+              onClick={() => setShowLogistics((v) => !v)}
+              className={[
+                'flex items-center gap-1 rounded px-3 py-1.5 text-xs font-semibold text-white transition-colors',
+                showLogistics
+                  ? 'bg-amber-700 hover:bg-amber-600'
+                  : 'bg-gray-700 hover:bg-gray-600',
+              ].join(' ')}
+            >
+              📦 {showLogistics ? 'Hide' : 'Logistics'}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="rounded border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
@@ -298,6 +320,9 @@ function SimRunPanel({
 
       {/* After-action report */}
       {showReport && report && <AfterActionReportPanel report={report} />}
+
+      {/* Logistics & attrition panel */}
+      {showLogistics && logistics && <LogisticsPanel logistics={logistics} />}
 
       {/* Event feed */}
       {events && events.length > 0 && !showReport && (
@@ -365,6 +390,26 @@ function AfterActionReportPanel({ report }: { report: AfterActionReport }) {
           ))}
         </div>
       )}
+
+      {report.logistics_summary && (
+        <div>
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Final Logistics State</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard
+              label="Blue Strength"
+              value={`${Math.round(report.logistics_summary.blue_final_strength_pct * 100)}%`}
+              color={report.logistics_summary.blue_final_strength_pct > 0.6 ? 'text-green-400' : 'text-yellow-400'}
+            />
+            <StatCard
+              label="Red Strength"
+              value={`${Math.round(report.logistics_summary.red_final_strength_pct * 100)}%`}
+              color={report.logistics_summary.red_final_strength_pct > 0.6 ? 'text-green-400' : 'text-yellow-400'}
+            />
+            <StatCard label="Blue Ammo" value={`${Math.round(report.logistics_summary.blue_supply.ammo * 100)}%`} color="text-sky-400" />
+            <StatCard label="Red Ammo" value={`${Math.round(report.logistics_summary.red_supply.ammo * 100)}%`} color="text-red-400" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -378,6 +423,85 @@ function StatCard({ label, value, color = 'text-white' }: { label: string; value
   )
 }
 
+// ── LogisticsPanel ────────────────────────────────────────────────────────────
+
+function SupplyBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100)
+  const color = pct > 60 ? 'bg-green-500' : pct > 30 ? 'bg-yellow-500' : 'bg-red-500'
+  return (
+    <div>
+      <div className="flex justify-between text-xs text-gray-400 mb-0.5">
+        <span>{label}</span>
+        <span>{pct}%</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-gray-700 overflow-hidden">
+        <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function ForceSummaryBlock({
+  label,
+  force,
+  labelColor,
+}: {
+  label: string
+  force: LogisticsState['blue']
+  labelColor: string
+}) {
+  return (
+    <div className="rounded border border-gray-800 bg-gray-900/60 p-3 space-y-2">
+      <p className={`text-xs font-semibold uppercase tracking-wider ${labelColor}`}>{label}</p>
+      <div className="grid grid-cols-3 gap-1.5 text-center">
+        <div>
+          <p className="text-xs text-gray-500">Strength</p>
+          <p className={`text-sm font-bold ${force.strength_pct > 0.6 ? 'text-green-400' : force.strength_pct > 0.3 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {Math.round(force.strength_pct * 100)}%
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">KIA</p>
+          <p className="text-sm font-bold text-red-400">{force.kia}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">WIA</p>
+          <p className="text-sm font-bold text-orange-400">{force.wia}</p>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <SupplyBar label="Ammo" value={force.supply.ammo} />
+        <SupplyBar label="Fuel" value={force.supply.fuel} />
+        <SupplyBar label="Rations" value={force.supply.rations} />
+      </div>
+      {Object.keys(force.equipment_losses).length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-1">
+          {Object.entries(force.equipment_losses).map(([cat, count]) => (
+            <span key={cat} className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
+              {cat} −{count}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LogisticsPanel({ logistics }: { logistics: LogisticsState }) {
+  return (
+    <div className="rounded-lg border border-amber-900/50 bg-amber-950/10 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-amber-300">Logistics &amp; Attrition</h3>
+        <span className="text-xs text-gray-500">Turn {logistics.turn_number}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ForceSummaryBlock label="Blue Force" force={logistics.blue} labelColor="text-sky-400" />
+        <ForceSummaryBlock label="Red Force" force={logistics.red} labelColor="text-red-400" />
+      </div>
+    </div>
+  )
+}
+
 function EventChip({ event }: { event: SimEvent }) {
   const typeColors: Record<string, string> = {
     ENGAGEMENT: 'border-red-800 text-red-300',
@@ -386,6 +510,8 @@ function EventChip({ event }: { event: SimEvent }) {
     AIRSTRIKE: 'border-purple-800 text-purple-300',
     UNIT_MOVE: 'border-gray-700 text-gray-400',
     PHASE_CHANGE: 'border-sky-800 text-sky-300',
+    SUPPLY_CONSUMED: 'border-yellow-800 text-yellow-300',
+    RESUPPLY: 'border-amber-700 text-amber-300',
   }
   const cls = typeColors[event.event_type] ?? 'border-gray-700 text-gray-400'
   return (

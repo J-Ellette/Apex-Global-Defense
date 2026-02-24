@@ -10,9 +10,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth import get_current_user, require_permission
-from app.engine.stub import build_after_action_report, generate_run_events, run_monte_carlo
+from app.engine.stub import build_after_action_report, generate_logistics_state, generate_run_events, run_monte_carlo
 from app.models import (
     AfterActionReport,
+    LogisticsState,
     MCResult,
     ScenarioConfig,
     SimEvent,
@@ -311,3 +312,41 @@ async def get_report(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
             mc_result = MCResult(**mc_cfg)
 
     return build_after_action_report(run_id, row["scenario_id"], config, events, mc_result)
+
+
+@router.get("/runs/{run_id}/logistics", response_model=LogisticsState)
+async def get_logistics(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
+    """Get logistics and attrition state for a simulation run at the latest turn."""
+    require_permission(claims, "scenario:read")
+    db = _db(request)
+    row = await _get_run_or_404(db, run_id)
+
+    cfg_raw = row["config"]
+    if isinstance(cfg_raw, str):
+        cfg_raw = json.loads(cfg_raw)
+    config = ScenarioConfig(**cfg_raw)
+
+    last_turn = await db.fetchval(
+        "SELECT COALESCE(MAX(turn_number), 0) FROM sim_events WHERE run_id=$1", run_id
+    )
+
+    event_rows = await db.fetch(
+        """
+        SELECT time, run_id, event_type, entity_id, payload, turn_number
+        FROM sim_events WHERE run_id=$1 ORDER BY time ASC
+        """,
+        run_id,
+    )
+    events = [
+        SimEvent(
+            time=r["time"],
+            run_id=r["run_id"],
+            event_type=r["event_type"],
+            entity_id=r["entity_id"],
+            payload=r["payload"] if isinstance(r["payload"], dict) else {},
+            turn_number=r["turn_number"],
+        )
+        for r in event_rows
+    ]
+
+    return generate_logistics_state(run_id, config, events, last_turn or 0)

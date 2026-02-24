@@ -1595,7 +1595,7 @@ class ExerciseScorer:
 - [x] After-action report generation — AfterActionReportPanel with objectives, casualties, MC results
 - [x] AI-assisted scenario builder (natural language → ScenarioConfig) — AIScenarioBuilderModal (stub + ai-svc hook)
 - [x] WebSocket collaboration layer (cursors, annotations sync) — `services/collab-svc/`: JWT-auth WS hub, Redis bridge
-- [ ] Logistics and attrition model
+- [x] Logistics and attrition model — `LogisticsState` endpoint + `LogisticsPanel` UI; supply levels (ammo/fuel/rations), strength %, KIA/WIA, equipment losses; RESUPPLY events; logistics summary in after-action reports
 
 **Deliverable**: Analysts can construct conventional conflict scenarios, run turn-based or real-time simulations, view probabilistic outcomes, and replay events.
 

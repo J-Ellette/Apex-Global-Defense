@@ -20,6 +20,7 @@ import type {
   SimEvent,
   AfterActionReport,
   StartRunRequest,
+  LogisticsState,
 } from './types'
 
 export const authApi = {
@@ -110,4 +111,7 @@ export const simApi = {
 
   getReport: (runId: string) =>
     simClient.get<AfterActionReport>(`/runs/${runId}/report`).then((r) => r.data),
+
+  getLogistics: (runId: string) =>
+    simClient.get<LogisticsState>(`/runs/${runId}/logistics`).then((r) => r.data),
 }

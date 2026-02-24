@@ -63,22 +63,54 @@ Begin Phase 2: Functional conventional warfare simulation engine. Work from the 
 - [x] Updated `docker-compose.dev.yml` — added `sim-orchestrator` and `collab-svc` services
 - [x] Updated `buildsheet.md` Phase 2 checklist to mark in-progress items
 
+---
+
+## Session 2 — Phase 2 Completion (2026-02-24)
+
+### Goal
+Complete the remaining Phase 2 item: Logistics and attrition model.
+
+### What I Did This Session
+
+- [x] **Logistics & attrition model — backend** (`services/sim-orchestrator/`)
+  - Added `SupplyLevels`, `ForceSummary`, `LogisticsState`, `LogisticsSummary` Pydantic models to `app/models.py`
+  - Added `RESUPPLY` event type to `EventType` enum
+  - Added `generate_logistics_state()` to `app/engine/stub.py`
+    - Derives per-force supply levels (ammo/fuel/rations) from accumulated events + weather + elapsed turns
+    - Tracks RESUPPLY event restorations separately for BLUE vs RED forces
+    - Computes personnel attrition (KIA/WIA) and equipment losses (armor, artillery, aircraft)
+  - Updated `build_after_action_report()` to compute and embed `LogisticsSummary` in AAR
+  - Added `RESUPPLY` payload generation in `generate_run_events()`
+  - Added `GET /runs/{run_id}/logistics` → `LogisticsState` endpoint
+
+- [x] **Logistics & attrition model — frontend** (`frontend/`)
+  - Added `SupplyLevels`, `ForceSummary`, `LogisticsState`, `LogisticsSummary` types to `shared/api/types/simulation.ts`
+  - Added `RESUPPLY` to `SimEventType`
+  - Added `logistics_summary?: LogisticsSummary` field to `AfterActionReport`
+  - Added `simApi.getLogistics()` to `shared/api/endpoints.ts`
+  - Added `LogisticsPanel` component to `SimulationPage.tsx`
+    - Per-force supply bars (ammo/fuel/rations) with color-coded depletion indicators
+    - Strength percentage with conditional coloring (green/yellow/red)
+    - KIA/WIA counts
+    - Equipment loss badges (armor, artillery, aircraft)
+  - Added **📦 Logistics** toggle button to `SimRunPanel` (auto-refreshes during live runs)
+  - Added `logistics_summary` final state section to `AfterActionReportPanel`
+  - Added RESUPPLY event color to `EventChip`
+
+- [x] Added `test_get_logistics_not_found` and `test_get_logistics_returns_state` tests
+
 ### Stopping Point
 
-Stopped after:
-1. sim-orchestrator (Python) — stub engine, no real C++ engine connection yet
-2. collab-svc (Go) — WebSocket relay, Redis pub/sub bridge
-3. Frontend sim run UI (turn-based + Monte Carlo + after-action report layout)
+Phase 2 is now **complete**. All checklist items marked done in `buildsheet.md`.
 
-### What's Next (Next Session)
+### What's Next (Session 3 — Phase 3)
 
-- [ ] C++/Rust sim engine scaffold with gRPC interface (`services/sim-engine/`)
-- [ ] Wire sim-orchestrator to real gRPC sim engine (replace stub)
-- [ ] After-action report generation — structured PDF/DOCX output via reporting-svc
-- [ ] WebSocket live event feed in frontend (connect to collab-svc)
-- [ ] Logistics and attrition model in sim engine
-- [ ] IntelPage — full OSINT ingestion UI (currently stub "under construction")
-- [ ] Phase 3 planning
+- [ ] Cyber module (ATT&CK mapping, infrastructure graph)
+- [ ] CBRN dispersion modeling (HYSPLIT integration)
+- [ ] Insurgent/asymmetric module (cell structure, IED threat)
+- [ ] Terror response planning module
+- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
+- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
 
 ---
 
@@ -88,8 +120,8 @@ Stopped after:
 |---------|-----------|----------|--------|
 | auth-svc | 8082 | Go | ✅ Complete |
 | oob-svc | 8083 | Go | ✅ Complete |
-| sim-orchestrator | 8085 | Python/FastAPI | 🔨 Session 1 |
-| collab-svc | 8084 | Go | 🔨 Session 1 |
+| sim-orchestrator | 8085 | Python/FastAPI | ✅ Session 1–2 |
+| collab-svc | 8084 | Go | ✅ Session 1 |
 | map-svc | — | Go | ⏳ Future |
 | intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
