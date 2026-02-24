@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+*.o
+*.a
+*.so
+*.exe
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker/
+
+# Kubernetes secrets
+k8s/secrets/
+
+# Go
+/tmp/
+__debug_bin
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Terraform / infra
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Tiles (large binary files)
+tiles/*.mbtiles
+
+# Ollama models
+ollama_models/
+
+# SBOM outputs
+sbom.json
+sbom.spdx.json

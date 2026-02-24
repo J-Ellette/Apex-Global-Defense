@@ -1,0 +1,78 @@
+{
+  "realm": "agd",
+  "displayName": "Apex Global Defense",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 28800,
+  "offlineSessionIdleTimeout": 2592000,
+  "clients": [
+    {
+      "clientId": "agd-frontend",
+      "name": "AGD Frontend",
+      "publicClient": true,
+      "redirectUris": ["http://localhost:5173/*", "https://app.agd.yourdomain.mil/*"],
+      "webOrigins": ["http://localhost:5173", "https://app.agd.yourdomain.mil"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "enabled": true
+    },
+    {
+      "clientId": "agd-backend",
+      "name": "AGD Backend Services",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "enabled": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "viewer",                "description": "Read-only access to UNCLASS data" },
+      { "name": "analyst",               "description": "Create and edit intel items and assessments" },
+      { "name": "planner",               "description": "Create and edit scenarios" },
+      { "name": "commander",             "description": "Approve scenarios, access FOUO data" },
+      { "name": "sim_operator",          "description": "Launch and control simulation runs" },
+      { "name": "admin",                 "description": "Full system administration" },
+      { "name": "classification_officer","description": "Manage classification labels on records" }
+    ]
+  },
+  "users": [
+    {
+      "username": "dev-admin",
+      "email": "admin@agd.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Dev",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "adminpass", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "dev-analyst",
+      "email": "analyst@agd.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Dev",
+      "lastName": "Analyst",
+      "credentials": [{ "type": "password", "value": "analystpass", "temporary": false }],
+      "realmRoles": ["analyst"]
+    }
+  ]
+}
