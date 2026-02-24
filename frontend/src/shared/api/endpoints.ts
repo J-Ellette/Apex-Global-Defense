@@ -4,6 +4,7 @@ import { simClient } from './simClient'
 import { cyberClient } from './cyberClient'
 import { cbrnClient } from './cbrnClient'
 import { asymClient } from './asymClient'
+import { terrorClient } from './terrorClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -52,6 +53,16 @@ import type {
   CreateIncidentRequest,
   UpdateIncidentRequest,
   NetworkAnalysis,
+  AttackCategory,
+  AttackTypeEntry,
+  TerrorSite,
+  CreateSiteRequest,
+  UpdateSiteRequest,
+  ThreatScenario,
+  CreateThreatScenarioRequest,
+  ResponsePlan,
+  CreateResponsePlanRequest,
+  SiteVulnerabilityAnalysis,
 } from './types'
 
 export const authApi = {
@@ -276,4 +287,56 @@ export const asymApi = {
     asymClient.put<IEDIncident>(`/asym/incidents/${incidentId}`, data).then((r) => r.data),
 
   deleteIncident: (incidentId: string) => asymClient.delete(`/asym/incidents/${incidentId}`),
+}
+
+export const terrorApi = {
+  // Attack type catalog (static)
+  listAttackTypes: (params?: { category?: AttackCategory }) =>
+    terrorClient.get<AttackTypeEntry[]>('/terror/attack-types', { params }).then((r) => r.data),
+
+  getAttackType: (typeId: string) =>
+    terrorClient.get<AttackTypeEntry>(`/terror/attack-types/${typeId}`).then((r) => r.data),
+
+  // Target sites
+  listSites: (params?: { scenario_id?: string; status?: string; site_type?: string }) =>
+    terrorClient.get<TerrorSite[]>('/terror/sites', { params }).then((r) => r.data),
+
+  createSite: (data: CreateSiteRequest) =>
+    terrorClient.post<TerrorSite>('/terror/sites', data).then((r) => r.data),
+
+  getSite: (siteId: string) =>
+    terrorClient.get<TerrorSite>(`/terror/sites/${siteId}`).then((r) => r.data),
+
+  updateSite: (siteId: string, data: UpdateSiteRequest) =>
+    terrorClient.put<TerrorSite>(`/terror/sites/${siteId}`, data).then((r) => r.data),
+
+  deleteSite: (siteId: string) => terrorClient.delete(`/terror/sites/${siteId}`),
+
+  // Threat scenarios
+  listThreatScenarios: (params?: { scenario_id?: string; site_id?: string; threat_level?: string }) =>
+    terrorClient.get<ThreatScenario[]>('/terror/threat-scenarios', { params }).then((r) => r.data),
+
+  createThreatScenario: (data: CreateThreatScenarioRequest) =>
+    terrorClient.post<ThreatScenario>('/terror/threat-scenarios', data).then((r) => r.data),
+
+  getThreatScenario: (tsId: string) =>
+    terrorClient.get<ThreatScenario>(`/terror/threat-scenarios/${tsId}`).then((r) => r.data),
+
+  deleteThreatScenario: (tsId: string) => terrorClient.delete(`/terror/threat-scenarios/${tsId}`),
+
+  // Response plans
+  listResponsePlans: (params?: { scenario_id?: string; site_id?: string; status?: string }) =>
+    terrorClient.get<ResponsePlan[]>('/terror/response-plans', { params }).then((r) => r.data),
+
+  createResponsePlan: (data: CreateResponsePlanRequest) =>
+    terrorClient.post<ResponsePlan>('/terror/response-plans', data).then((r) => r.data),
+
+  getResponsePlan: (planId: string) =>
+    terrorClient.get<ResponsePlan>(`/terror/response-plans/${planId}`).then((r) => r.data),
+
+  deleteResponsePlan: (planId: string) => terrorClient.delete(`/terror/response-plans/${planId}`),
+
+  // Site vulnerability analysis
+  analyzeSite: (siteId: string) =>
+    terrorClient.get<SiteVulnerabilityAnalysis>(`/terror/sites/${siteId}/analysis`).then((r) => r.data),
 }
