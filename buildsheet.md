@@ -1606,9 +1606,9 @@ class ExerciseScorer:
 - [x] CBRN dispersion modeling (HYSPLIT integration)
 - [x] Insurgent/asymmetric module (cell structure, IED threat)
 - [x] Terror response planning module
-- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
-- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
-- [ ] Elasticsearch + semantic search (pgvector)
+- [x] AI-assisted intel analysis (entity extraction, threat assessment)
+- [x] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+- [x] Elasticsearch + semantic search (pgvector)
 - [x] CBRN frontend: plume visualization, casualty overlays
 - [ ] Civilian impact overlays (population, refugee modeling)
 

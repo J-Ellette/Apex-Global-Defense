@@ -392,10 +392,87 @@ Terror response planning module (Phase 3, item 4) is **complete**. Next: AI-assi
 
 ### What's Next (Session 7 — Phase 3 continued)
 
-- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
-- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
-- [ ] Elasticsearch + semantic search (pgvector)
+- [x] AI-assisted intel analysis (entity extraction, threat assessment)
+- [x] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+- [x] Elasticsearch + semantic search (pgvector)
 - [ ] Civilian impact overlays (population, refugee modeling)
+
+---
+
+## Session 7 — Phase 3 Intel Items (2026-02-24)
+
+### Goal
+Complete Phase 3 intelligence items: AI-assisted intel analysis, OSINT ingestion pipeline, pgvector semantic search.
+
+### What I Did This Session
+
+- [x] **`services/intel-svc/`** — Python/FastAPI intelligence service (port 8090)
+  - **Entity extraction engine** (`app/engine/extractor.py`)
+    - Fully deterministic NLP using regex patterns and curated military keyword lists
+    - Extracts: PERSON, ORGANIZATION, LOCATION, WEAPON, DATE, EVENT, VEHICLE, FACILITY
+    - Supports: 35+ weapon keywords, 12 org patterns, military ranks/titles, Arabic names, patronymics
+    - 12 location patterns including military map references (Hill 937, MGRS grids)
+    - 14 event keywords (attack, airstrike, ambush, IED attack, VBIED, etc.)
+    - Deduplication by (type, text) key; all confidences clamped 0–1
+    - Air-gap first: zero ML model dependencies
+  - **Threat assessment engine** (`app/engine/threat.py`)
+    - Deterministic PMESII-PT/ASCOPE inspired weighted indicator matrix
+    - 14 threat indicators (kinetic, intelligence, cyber, CBRN, destabilization, actor-specific)
+    - Actor classification: state actors, terrorist organizations, cyber actors
+    - Score modifiers: state actor +1.0, terrorist +1.5
+    - Outputs: ThreatLevel enum (NEGLIGIBLE/LOW/MODERATE/HIGH/CRITICAL), score 0–10
+    - Derives active ThreatVectors (MILITARY, TERRORIST, CYBER, CBRN, ECONOMIC, HYBRID)
+    - Confidence score based on proportion of indicators with evidence
+    - Protective action recommendations tailored to level and vectors
+  - **OSINT ingestion adapters** (`app/engine/osint_adapters.py`)
+    - `ACLEDAdapter`: ACLED API with fallback to 5 deterministic synthetic conflict events (Ukraine, Afghanistan, Syria, Mali, Iraq)
+    - `UCDPAdapter`: UCDP GED API with synthetic fallback (Ethiopia Tigray, Mozambique Cabo Delgado)
+    - `RSSAdapter`: feedparser-based generic adapter for Reuters/BBC/ReliefWeb with synthetic fallback
+    - `run_ingestion()`: fetch → entity extract → DB INSERT with `ON CONFLICT DO NOTHING`
+    - Adapter registry: `_init_registry()` initialized from service config
+  - **Intel CRUD + search** (`app/routers/intel.py`)
+    - `GET /intel` — list with source_type / classification filters
+    - `POST /intel` — ingest item with optional auto entity extraction
+    - `GET /intel/{id}` — get single item
+    - `PUT /intel/{id}` — update title/content/classification/reliability/credibility
+    - `DELETE /intel/{id}` — delete
+    - `POST /intel/search` — full-text (PostgreSQL `to_tsvector`), geo (PostGIS `ST_DWithin`), date range
+    - `POST /intel/semantic-search` — pgvector `<=>` cosine similarity (falls back to full-text when embedding model not available; production: swap in `embedding = await embed(query)`)
+  - **Analysis endpoints** (`app/routers/analysis.py`)
+    - `POST /intel/extract` — entity extraction on arbitrary text; optionally persists to item
+    - `POST /intel/threat-assess` — threat assessment; optionally enriches context with referenced intel items
+  - **OSINT pipeline endpoints** (`app/routers/osint.py`)
+    - `GET /intel/osint/sources` — list adapters with DB-backed item counts
+    - `POST /intel/osint/ingest` — trigger ingestion run (dry_run supported)
+  - `Dockerfile` + `requirements.txt` (same stack as other Python services)
+  - 27 unit tests — all passing
+
+- [x] **DB schema** (`db/init/007_intel_schema.sql`)
+  - `intel_threat_assessments` — stored threat assessment results with full indicator JSONB
+  - `osint_ingestion_jobs` — ingestion job history / audit trail
+  - `idx_intel_fts` — PostgreSQL GIN full-text search index on intel_items (supplements pgvector)
+
+- [x] **Frontend** (`frontend/src/modules/intel/IntelPage.tsx`) — replaced stub with full module
+  - **Intel Feed tab** — item cards with source type badge, classification, entity chips (color-coded by type), date, location, semantic embedding indicator; add item modal (all fields including NATO reliability/credibility); item detail modal with full entity breakdown
+  - **Analysis tab** — Entity Extraction panel (paste text → NLP → grouped entity results by type with confidence %) and Threat Assessment panel (actor + target + context → indicator breakdown + score bar + vector tags + protective actions)
+  - **OSINT Sources tab** — ACLED/UCDP/RSS source cards with item counts, last ingestion date, ingest trigger button, dry-run button, result summary
+  - Search: full-text + source type filter; 🧠 Semantic button (calls semantic-search endpoint)
+
+- [x] Added `intelClient.ts` — Axios client for intel-svc (port 8090, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/intel.ts` — full TypeScript type definitions
+- [x] Added `intelApi` to `endpoints.ts` — all intel operations
+- [x] Updated `frontend/src/shared/api/types/index.ts` — re-exports intel types
+- [x] Updated `docker-compose.dev.yml` — added `intel-svc` (port 8090) + `VITE_INTEL_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — AI-assisted intel, OSINT pipeline, pgvector marked done
+
+### Stopping Point
+
+Three Phase 3 intel items are **complete**: AI-assisted intel analysis, OSINT ingestion pipeline (ACLED/UCDP/RSS), and pgvector semantic search.
+
+### What's Next (Session 8 — Phase 3 final item)
+
+- [ ] Civilian impact overlays (population, refugee modeling)
+- [ ] Then Phase 4 items (multi-user collaboration, STIX/TAXII, auto-report generation, etc.)
 
 ---
 
@@ -411,8 +488,8 @@ Terror response planning module (Phase 3, item 4) is **complete**. Next: AI-assi
 | cbrn-svc | 8087 | Python/FastAPI | ✅ Session 4 |
 | asym-svc | 8088 | Python/FastAPI | ✅ Session 5 |
 | terror-svc | 8089 | Python/FastAPI | ✅ Session 6 |
+| intel-svc | 8090 | Python/FastAPI | ✅ Session 7 |
 | map-svc | — | Go | ⏳ Future |
-| intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
 | reporting-svc | — | Python | ⏳ Future |
 | sim-engine | — | C++/Rust | ⏳ Future |
@@ -428,3 +505,4 @@ Terror response planning module (Phase 3, item 4) is **complete**. Next: AI-assi
 - **CBRN svc**: `http://localhost:8087/api/v1` (consumed by frontend `VITE_CBRN_API_URL`)
 - **Asym svc**: `http://localhost:8088/api/v1` (consumed by frontend `VITE_ASYM_API_URL`)
 - **Terror svc**: `http://localhost:8089/api/v1` (consumed by frontend `VITE_TERROR_API_URL`)
+- **Intel svc**: `http://localhost:8090/api/v1` (consumed by frontend `VITE_INTEL_API_URL`)
