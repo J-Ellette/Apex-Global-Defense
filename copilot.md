@@ -476,6 +476,80 @@ Three Phase 3 intel items are **complete**: AI-assisted intel analysis, OSINT in
 
 ---
 
+## Session 8 — Phase 3 Completion (2026-02-24)
+
+### Goal
+Complete the final Phase 3 item: Civilian impact overlays (population, refugee modeling).
+
+### What I Did This Session
+
+- [x] **Civilian Impact Service — backend** (`services/civilian-svc/`)
+  - Python/FastAPI service on port 8091
+  - **Population zone CRUD** (`app/routers/population.py`)
+    - `GET /civilian/population`, `POST /civilian/population`, `GET /civilian/population/{id}`, `DELETE /civilian/population/{id}`
+    - 8 built-in seed zones when DB is empty: Baghdad, Kabul, Kyiv, Mariupol, Aleppo, Mogadishu, Khartoum, Bamako
+  - **Civilian impact assessment** (`app/routers/impact.py`)
+    - `POST /civilian/impact/assess` — runs deterministic model, stores result
+    - `GET /civilian/impact/{run_id}` — retrieve stored assessment
+  - **Refugee flows** (`app/routers/flows.py`)
+    - Full CRUD; 5 seed flows (Ukraine→Poland, Syria→Turkey, Afghanistan→Pakistan, Somalia→Kenya, Sudan→Chad)
+  - **Humanitarian corridors** (`app/routers/corridors.py`)
+    - Full CRUD; 3 seed corridors; status: OPEN/RESTRICTED/CLOSED
+  - **Deterministic impact engine** (`app/engine/impact.py`)
+    - Haversine proximity model — only events within 3× zone radius affect zone
+    - Per-event-type severity: CBRN_RELEASE (8.0) > AIRSTRIKE (2.5) > ENGAGEMENT (0.8)
+    - Per-density-class multipliers: URBAN (1.0) > SUBURBAN (0.4) > RURAL (0.1) > SPARSE (0.02)
+    - Wounded ≈ 2.5× casualties; impact_score 0–10; infrastructure_damage_pct 0–1
+  - 23 unit tests — all passing
+  - `Dockerfile` + `requirements.txt`
+
+- [x] **DB schema** (`db/init/008_civilian_schema.sql`)
+  - `civilian_population_zones` — zone data (id, scenario_id, name, country_code, lat/lon, radius_km, population, density_class)
+  - `civilian_impact_assessments` — stored assessments with JSONB zone_impacts array
+  - `civilian_refugee_flows` — displacement flows (origin/destination, status: PROJECTED/CONFIRMED/RESOLVED)
+  - `civilian_humanitarian_corridors` — safe passage corridors (waypoints JSONB, status: OPEN/RESTRICTED/CLOSED)
+  - Indexes on scenario_id, status, run_id
+
+- [x] **Frontend** (`frontend/src/modules/civilian/CivilianPage.tsx`) — full 4-tab module
+  - **Population Zones tab** — table with colored density badges (URBAN=sky, SUBURBAN=yellow, RURAL=green, SPARSE=gray), delete per row, AddZoneModal with full validation
+  - **Impact Assessment tab** — run ID input → assess → summary cards (casualties/wounded/displaced) + per-zone table with color-coded impact score progress bars (green ≤3, yellow ≤6, red >6)
+  - **Refugee Flows tab** — table with inline status dropdowns + Save + Delete per row; AddFlowModal
+  - **Humanitarian Corridors tab** — card grid with inline status select + Save + Delete; AddCorridorModal (lat,lon textarea parsing)
+
+- [x] Added `civilianClient.ts` — Axios client for civilian-svc (port 8091, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/civilian.ts` — full TypeScript type definitions
+- [x] Added `civilianApi` to `endpoints.ts` — all civilian operations
+- [x] Updated `frontend/src/shared/api/types/index.ts` — re-exports civilian types
+- [x] Updated `frontend/src/app/router.tsx` — added `/civilian` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added 👥 Civilian Impact card
+- [x] Updated `frontend/src/modules/map/hooks/useMapLayers.ts` — added 3 new overlay layers: Population Density, Refugee Flows, Humanitarian Corridors
+- [x] Updated `frontend/src/modules/map/MapCanvas.tsx` — renders population zones as circles, refugee flows as dashed amber lines, corridors as colored status lines; lazy-fetches data when layer is toggled on
+- [x] Updated `docker-compose.dev.yml` — added `civilian-svc` (port 8091) + `VITE_CIVILIAN_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — Civilian impact overlays marked done
+- [x] Updated `copilot.md` — added Session 8 entry
+
+### Stopping Point
+
+Phase 3 is now **100% complete**. All Phase 3 items are done.
+
+### What's Next (Session 9 — Phase 4 start)
+
+Phase 4 — Enterprise items, starting from the top:
+- [ ] Multi-user collaboration with role-based map control
+- [ ] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
+- [ ] STIX/TAXII cyber threat feed consumer
+- [ ] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
+- [ ] Classification handling hardening (row-level security, labels)
+- [ ] FedRAMP documentation and controls
+- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
+- [ ] Mobile app (React Native, read-only, offline maps)
+- [ ] Economic warfare module
+- [ ] Information operations / disinformation tracking
+- [ ] API for external system integration (ArcGIS, Google Earth)
+- [ ] Training mode (exercise inject system, scoring)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -489,6 +563,7 @@ Three Phase 3 intel items are **complete**: AI-assisted intel analysis, OSINT in
 | asym-svc | 8088 | Python/FastAPI | ✅ Session 5 |
 | terror-svc | 8089 | Python/FastAPI | ✅ Session 6 |
 | intel-svc | 8090 | Python/FastAPI | ✅ Session 7 |
+| civilian-svc | 8091 | Python/FastAPI | ✅ Session 8 |
 | map-svc | — | Go | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
 | reporting-svc | — | Python | ⏳ Future |
@@ -506,3 +581,4 @@ Three Phase 3 intel items are **complete**: AI-assisted intel analysis, OSINT in
 - **Asym svc**: `http://localhost:8088/api/v1` (consumed by frontend `VITE_ASYM_API_URL`)
 - **Terror svc**: `http://localhost:8089/api/v1` (consumed by frontend `VITE_TERROR_API_URL`)
 - **Intel svc**: `http://localhost:8090/api/v1` (consumed by frontend `VITE_INTEL_API_URL`)
+- **Civilian svc**: `http://localhost:8091/api/v1` (consumed by frontend `VITE_CIVILIAN_API_URL`)

@@ -15,6 +15,7 @@ const CyberPage = lazy(() => import('../modules/cyber/CyberPage'))
 const CBRNPage = lazy(() => import('../modules/cbrn/CBRNPage'))
 const AsymPage = lazy(() => import('../modules/asym/AsymPage'))
 const TerrorPage = lazy(() => import('../modules/terror/TerrorPage'))
+const CivilianPage = lazy(() => import('../modules/civilian/CivilianPage'))
 
 // ── Guard: redirect unauthenticated users to /login ───────────────────────────
 function ProtectedRoute() {
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: '/cbrn', element: <CBRNPage /> },
       { path: '/asym', element: <AsymPage /> },
       { path: '/terror', element: <TerrorPage /> },
+      { path: '/civilian', element: <CivilianPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },

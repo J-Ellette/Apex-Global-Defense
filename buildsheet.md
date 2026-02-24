@@ -1610,7 +1610,7 @@ class ExerciseScorer:
 - [x] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
 - [x] Elasticsearch + semantic search (pgvector)
 - [x] CBRN frontend: plume visualization, casualty overlays
-- [ ] Civilian impact overlays (population, refugee modeling)
+- [x] Civilian impact overlays (population, refugee modeling)
 
 **Deliverable**: Full multi-domain simulation with AI-assisted intelligence analysis.
 

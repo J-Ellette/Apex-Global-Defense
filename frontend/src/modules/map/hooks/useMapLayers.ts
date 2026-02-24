@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 
-export type LayerId = 'osm-base' | 'unit-markers' | 'aor-polygons' | 'intel-points' | 'annotations'
+export type LayerId = 'osm-base' | 'unit-markers' | 'aor-polygons' | 'intel-points' | 'annotations' | 'population-density' | 'refugee-flows' | 'humanitarian-corridors'
 
 export interface MapLayer {
   id: LayerId
@@ -14,7 +14,10 @@ const DEFAULT_LAYERS: MapLayer[] = [
   { id: 'unit-markers',  label: 'Military Units',     visible: true,  opacity: 1 },
   { id: 'aor-polygons',  label: 'Areas of Responsibility', visible: false, opacity: 0.4 },
   { id: 'intel-points',  label: 'Intel Items',        visible: false, opacity: 1 },
-  { id: 'annotations',   label: 'Annotations',        visible: true,  opacity: 1 },
+  { id: 'annotations',              label: 'Annotations',              visible: true,  opacity: 1 },
+  { id: 'population-density',        label: 'Population Density',        visible: false, opacity: 0.6 },
+  { id: 'refugee-flows',             label: 'Refugee Flows',             visible: false, opacity: 0.8 },
+  { id: 'humanitarian-corridors',    label: 'Humanitarian Corridors',    visible: false, opacity: 0.9 },
 ]
 
 export function useMapLayers() {
