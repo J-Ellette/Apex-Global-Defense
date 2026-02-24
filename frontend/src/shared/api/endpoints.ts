@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import { oobClient } from './oobClient'
 import { simClient } from './simClient'
 import { cyberClient } from './cyberClient'
+import { cbrnClient } from './cbrnClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -33,6 +34,11 @@ import type {
   CreateAttackRequest,
   SimulateAttackRequest,
   SimulateAttackResult,
+  CBRNCategory,
+  CBRNAgent,
+  CBRNRelease,
+  CreateReleaseRequest,
+  DispersionSimulation,
 } from './types'
 
 export const authApi = {
@@ -164,4 +170,34 @@ export const cyberApi = {
 
   simulateAttack: (attackId: string, data: SimulateAttackRequest) =>
     cyberClient.post<SimulateAttackResult>(`/cyber/attacks/${attackId}/simulate`, data).then((r) => r.data),
+}
+
+export const cbrnApi = {
+  // Agent catalog
+  listAgents: (params?: { category?: CBRNCategory; q?: string }) =>
+    cbrnClient.get<CBRNAgent[]>('/cbrn/agents', { params }).then((r) => r.data),
+
+  getAgent: (agentId: string) =>
+    cbrnClient.get<CBRNAgent>(`/cbrn/agents/${agentId}`).then((r) => r.data),
+
+  // Release events
+  listReleases: (scenarioId?: string) =>
+    cbrnClient
+      .get<CBRNRelease[]>('/cbrn/releases', { params: scenarioId ? { scenario_id: scenarioId } : undefined })
+      .then((r) => r.data),
+
+  createRelease: (data: CreateReleaseRequest) =>
+    cbrnClient.post<CBRNRelease>('/cbrn/releases', data).then((r) => r.data),
+
+  getRelease: (releaseId: string) =>
+    cbrnClient.get<CBRNRelease>(`/cbrn/releases/${releaseId}`).then((r) => r.data),
+
+  deleteRelease: (releaseId: string) => cbrnClient.delete(`/cbrn/releases/${releaseId}`),
+
+  // Dispersion simulation
+  simulate: (releaseId: string) =>
+    cbrnClient.post<DispersionSimulation>(`/cbrn/releases/${releaseId}/simulate`).then((r) => r.data),
+
+  getSimulation: (releaseId: string) =>
+    cbrnClient.get<DispersionSimulation>(`/cbrn/releases/${releaseId}/simulation`).then((r) => r.data),
 }

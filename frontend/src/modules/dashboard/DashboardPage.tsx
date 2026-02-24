@@ -75,6 +75,12 @@ const MODULE_CARDS = [
     description: 'MITRE ATT&CK catalog, infrastructure graph, and cyber attack simulation.',
   },
   {
+    href: '/cbrn',
+    icon: '☣️',
+    title: 'CBRN Operations',
+    description: 'Chemical, biological, radiological, and nuclear agent catalog, release planning, and Gaussian plume dispersion modeling.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',
