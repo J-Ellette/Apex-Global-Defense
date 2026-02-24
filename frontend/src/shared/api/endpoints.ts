@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 import { oobClient } from './oobClient'
 import { simClient } from './simClient'
+import { cyberClient } from './cyberClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -21,6 +22,17 @@ import type {
   AfterActionReport,
   StartRunRequest,
   LogisticsState,
+  ATTACKTactic,
+  ATTACKTechnique,
+  InfraGraph,
+  InfraNode,
+  InfraEdge,
+  CreateInfraNodeRequest,
+  CreateInfraEdgeRequest,
+  CyberAttack,
+  CreateAttackRequest,
+  SimulateAttackRequest,
+  SimulateAttackResult,
 } from './types'
 
 export const authApi = {
@@ -114,4 +126,42 @@ export const simApi = {
 
   getLogistics: (runId: string) =>
     simClient.get<LogisticsState>(`/runs/${runId}/logistics`).then((r) => r.data),
+}
+
+export const cyberApi = {
+  // ATT&CK Techniques
+  listTechniques: (params?: { tactic?: ATTACKTactic; platform?: string; severity?: string; q?: string }) =>
+    cyberClient.get<ATTACKTechnique[]>('/cyber/techniques', { params }).then((r) => r.data),
+
+  getTechnique: (id: string) =>
+    cyberClient.get<ATTACKTechnique>(`/cyber/techniques/${id}`).then((r) => r.data),
+
+  // Infrastructure Graph
+  getGraph: (scenarioId?: string) =>
+    cyberClient
+      .get<InfraGraph>('/cyber/infrastructure', { params: scenarioId ? { scenario_id: scenarioId } : undefined })
+      .then((r) => r.data),
+
+  createNode: (data: CreateInfraNodeRequest) =>
+    cyberClient.post<InfraNode>('/cyber/infrastructure/nodes', data).then((r) => r.data),
+
+  deleteNode: (nodeId: string) => cyberClient.delete(`/cyber/infrastructure/nodes/${nodeId}`),
+
+  createEdge: (data: CreateInfraEdgeRequest) =>
+    cyberClient.post<InfraEdge>('/cyber/infrastructure/edges', data).then((r) => r.data),
+
+  deleteEdge: (edgeId: string) => cyberClient.delete(`/cyber/infrastructure/edges/${edgeId}`),
+
+  // Cyber Attacks
+  listAttacks: (params?: { scenario_id?: string; status?: string }) =>
+    cyberClient.get<CyberAttack[]>('/cyber/attacks', { params }).then((r) => r.data),
+
+  createAttack: (data: CreateAttackRequest) =>
+    cyberClient.post<CyberAttack>('/cyber/attacks', data).then((r) => r.data),
+
+  getAttack: (attackId: string) =>
+    cyberClient.get<CyberAttack>(`/cyber/attacks/${attackId}`).then((r) => r.data),
+
+  simulateAttack: (attackId: string, data: SimulateAttackRequest) =>
+    cyberClient.post<SimulateAttackResult>(`/cyber/attacks/${attackId}/simulate`, data).then((r) => r.data),
 }

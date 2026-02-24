@@ -114,6 +114,65 @@ Phase 2 is now **complete**. All checklist items marked done in `buildsheet.md`.
 
 ---
 
+## Session 3 — Phase 3 Start (2026-02-24)
+
+### Goal
+Begin Phase 3: Domain Expansion. First item: Cyber module.
+
+### What I Did This Session
+
+- [x] **Cyber module — backend** (`services/cyber-svc/`)
+  - Python/FastAPI service with JWT auth (same pattern as sim-orchestrator)
+  - **ATT&CK Techniques catalog** (`app/data/attack_techniques.py`) — 30 representative techniques across all 14 enterprise tactics (Reconnaissance → Impact)
+  - `GET /cyber/techniques` — list with filtering by tactic, platform, severity, full-text search
+  - `GET /cyber/techniques/{id}` — single technique detail
+  - **Infrastructure Graph** (`app/routers/infrastructure.py`) — DB-backed node/edge CRUD
+    - `GET /cyber/infrastructure` — full graph (nodes + edges), optionally scoped to scenario
+    - `POST /cyber/infrastructure/nodes` — add node (HOST, SERVER, ROUTER, FIREWALL, ICS, CLOUD, SATELLITE, IOT, DATABASE)
+    - `PUT /cyber/infrastructure/nodes/{id}` — update node
+    - `DELETE /cyber/infrastructure/nodes/{id}` — remove node (cascades edges)
+    - `POST /cyber/infrastructure/edges` — add connection
+    - `DELETE /cyber/infrastructure/edges/{id}` — remove connection
+  - **Cyber Attacks** (`app/routers/attacks.py`) — ATT&CK-mapped attack planning + simulation
+    - `GET /cyber/attacks` — list attacks with status/scenario filters
+    - `POST /cyber/attacks` — plan an attack (validates technique, estimates success probability from severity + target criticality)
+    - `GET /cyber/attacks/{id}` — get attack detail
+    - `POST /cyber/attacks/{id}/simulate` — Monte Carlo-style outcome simulation (defender skill + network hardening modifiers → success/detection/damage/spread)
+  - `Dockerfile` + `requirements.txt`
+  - 13 unit tests (conftest mocks asyncpg pool, dependency_overrides for JWT)
+
+- [x] **DB schema** (`db/init/003_cyber_schema.sql`)
+  - `cyber_infra_nodes` — infrastructure graph nodes with criticality, tags, metadata
+  - `cyber_infra_edges` — connections with type, protocol, port
+  - `cyber_attacks` — planned/executed attacks with technique_id, target node, result JSONB
+
+- [x] **Cyber module — frontend** (`frontend/src/modules/cyber/CyberPage.tsx`)
+  - **ATT&CK Techniques tab** — searchable/filterable table with detail side panel (description, mitigations, link to attack.mitre.org)
+  - **Infrastructure Graph tab** — node cards (typed icons, criticality colors) + edge connection table; Add Node / Add Connection forms with validation
+  - **Attack Planner tab** — plan attacks by selecting technique + threat actor + target node; per-attack simulate button with defender skill / network hardening sliders; result card (success/failure, damage level, detection narrative)
+
+- [x] Added `cyberClient.ts` — Axios client for cyber-svc (port 8086, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/cyber.ts` — full TypeScript type definitions
+- [x] Added `cyberApi` to `endpoints.ts` — all cyber operations
+- [x] Updated `frontend/src/app/router.tsx` — added `/cyber` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added Cyber Operations module card
+- [x] Updated `docker-compose.dev.yml` — added `cyber-svc` (port 8086) + `VITE_CYBER_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — Cyber module marked done
+
+### Stopping Point
+
+Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
+
+### What's Next (Session 4 — Phase 3 continued)
+
+- [ ] CBRN dispersion modeling (HYSPLIT integration)
+- [ ] Insurgent/asymmetric module (cell structure, IED threat)
+- [ ] Terror response planning module
+- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
+- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -122,6 +181,7 @@ Phase 2 is now **complete**. All checklist items marked done in `buildsheet.md`.
 | oob-svc | 8083 | Go | ✅ Complete |
 | sim-orchestrator | 8085 | Python/FastAPI | ✅ Session 1–2 |
 | collab-svc | 8084 | Go | ✅ Session 1 |
+| cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 |
 | map-svc | — | Go | ⏳ Future |
 | intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |

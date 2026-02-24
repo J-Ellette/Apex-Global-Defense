@@ -69,6 +69,12 @@ const MODULE_CARDS = [
     description: 'Ingest, search, and analyze OSINT/SIGINT/HUMINT items.',
   },
   {
+    href: '/cyber',
+    icon: '💻',
+    title: 'Cyber Operations',
+    description: 'MITRE ATT&CK catalog, infrastructure graph, and cyber attack simulation.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',
