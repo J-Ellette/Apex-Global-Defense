@@ -5,6 +5,7 @@ import { cyberClient } from './cyberClient'
 import { cbrnClient } from './cbrnClient'
 import { asymClient } from './asymClient'
 import { terrorClient } from './terrorClient'
+import { intelClient } from './intelClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -63,6 +64,19 @@ import type {
   ResponsePlan,
   CreateResponsePlanRequest,
   SiteVulnerabilityAnalysis,
+  IntelItem,
+  CreateIntelItemRequest,
+  UpdateIntelItemRequest,
+  SearchRequest,
+  SemanticSearchRequest,
+  SearchResult,
+  ExtractionRequest,
+  ExtractionResult,
+  ThreatAssessmentRequest,
+  ThreatAssessmentResult,
+  OSINTSource,
+  IngestRequest,
+  IngestResult,
 } from './types'
 
 export const authApi = {
@@ -339,4 +353,42 @@ export const terrorApi = {
   // Site vulnerability analysis
   analyzeSite: (siteId: string) =>
     terrorClient.get<SiteVulnerabilityAnalysis>(`/terror/sites/${siteId}/analysis`).then((r) => r.data),
+}
+
+export const intelApi = {
+  // Intel item CRUD
+  listItems: (params?: { source_type?: string; classification?: string; limit?: number; offset?: number }) =>
+    intelClient.get<IntelItem[]>('/intel', { params }).then((r) => r.data),
+
+  createItem: (data: CreateIntelItemRequest) =>
+    intelClient.post<IntelItem>('/intel', data).then((r) => r.data),
+
+  getItem: (itemId: string) =>
+    intelClient.get<IntelItem>(`/intel/${itemId}`).then((r) => r.data),
+
+  updateItem: (itemId: string, data: UpdateIntelItemRequest) =>
+    intelClient.put<IntelItem>(`/intel/${itemId}`, data).then((r) => r.data),
+
+  deleteItem: (itemId: string) => intelClient.delete(`/intel/${itemId}`),
+
+  // Search
+  search: (data: SearchRequest) =>
+    intelClient.post<SearchResult>('/intel/search', data).then((r) => r.data),
+
+  semanticSearch: (data: SemanticSearchRequest) =>
+    intelClient.post<SearchResult>('/intel/semantic-search', data).then((r) => r.data),
+
+  // Analysis
+  extractEntities: (data: ExtractionRequest) =>
+    intelClient.post<ExtractionResult>('/intel/extract', data).then((r) => r.data),
+
+  assessThreat: (data: ThreatAssessmentRequest) =>
+    intelClient.post<ThreatAssessmentResult>('/intel/threat-assess', data).then((r) => r.data),
+
+  // OSINT pipeline
+  listOSINTSources: () =>
+    intelClient.get<OSINTSource[]>('/intel/osint/sources').then((r) => r.data),
+
+  triggerIngestion: (data: IngestRequest) =>
+    intelClient.post<IngestResult>('/intel/osint/ingest', data).then((r) => r.data),
 }
