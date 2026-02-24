@@ -1602,7 +1602,7 @@ class ExerciseScorer:
 ### Phase 3 — Domain Expansion (Months 13–20)
 **Goal**: Multi-domain simulation capability.
 
-- [ ] Cyber module (ATT&CK mapping, infrastructure graph)
+- [x] Cyber module (ATT&CK mapping, infrastructure graph)
 - [ ] CBRN dispersion modeling (HYSPLIT integration)
 - [ ] Insurgent/asymmetric module (cell structure, IED threat)
 - [ ] Terror response planning module
