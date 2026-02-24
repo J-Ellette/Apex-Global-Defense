@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { DrawMode } from './AnnotationToolbar'
@@ -32,6 +32,9 @@ export function MapCanvas({
   const mapRef       = useRef<maplibregl.Map | null>(null)
   const linePointsRef = useRef<[number, number][]>([])
   const tempMarkerRef = useRef<maplibregl.Marker[]>([])
+
+  // Pending text annotation — coordinates waiting for a label
+  const [pendingText, setPendingText] = useState<{ coords: [number, number]; label: string } | null>(null)
 
   // Initialize map
   useEffect(() => {
@@ -126,17 +129,19 @@ export function MapCanvas({
     (e: maplibregl.MapMouseEvent) => {
       const { lng, lat } = e.lngLat
 
-      if (drawMode === 'marker' || drawMode === 'text') {
-        const label = drawMode === 'text'
-          ? (prompt('Enter label text:') ?? '')
-          : ''
+      if (drawMode === 'marker') {
         onAnnotationAdd({
           id: crypto.randomUUID(),
-          type: drawMode === 'text' ? 'text' : 'marker',
+          type: 'marker',
           coordinates: [lng, lat],
-          label,
+          label: '',
           color: '#FF4444',
         })
+        return
+      }
+
+      if (drawMode === 'text') {
+        setPendingText({ coords: [lng, lat], label: '' })
         return
       }
 
@@ -274,12 +279,70 @@ export function MapCanvas({
     })
   }, [layerVisibility, layerOpacity])
 
+  function commitPendingText() {
+    if (!pendingText) return
+    if (pendingText.label.trim()) {
+      onAnnotationAdd({
+        id: crypto.randomUUID(),
+        type: 'text',
+        coordinates: pendingText.coords,
+        label: pendingText.label.trim(),
+        color: '#FF4444',
+      })
+    }
+    setPendingText(null)
+  }
+
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full"
-      aria-label="Geospatial map"
-      data-testid="map-canvas"
-    />
+    <div className="relative w-full h-full">
+      <div
+        ref={containerRef}
+        className="w-full h-full"
+        aria-label="Geospatial map"
+        data-testid="map-canvas"
+      />
+
+      {/* Inline label input for text annotations */}
+      {pendingText && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Add map label"
+            className="pointer-events-auto rounded-lg border border-gray-700 bg-gray-900/95 backdrop-blur-sm shadow-xl p-4 w-72 space-y-3"
+          >
+            <p className="text-sm font-medium text-white">Add label</p>
+            <input
+              autoFocus
+              value={pendingText.label}
+              onChange={(e) => setPendingText({ ...pendingText, label: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitPendingText()
+                if (e.key === 'Escape') setPendingText(null)
+              }}
+              placeholder="Enter label text…"
+              className="w-full rounded bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setPendingText(null)}
+                className="px-3 py-1.5 text-xs text-gray-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={commitPendingText}
+                disabled={!pendingText.label.trim()}
+                className="rounded bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-40 transition-colors"
+              >
+                Add label
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

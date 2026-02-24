@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/j-ellette/apex-global-defense/services/oob-svc/internal/models"
 )
 
@@ -520,17 +520,20 @@ func (s *OOBStore) CreateScenario(ctx context.Context, req models.CreateScenario
 	if cls == "" {
 		cls = "UNCLASS"
 	}
-	tagsJSON, _ := json.Marshal(tagsToPGArray(req.Tags))
+	tags := req.Tags
+	if tags == nil {
+		tags = []string{}
+	}
 
 	const q = `
 		INSERT INTO scenarios (name, description, classification, created_by, org_id, tags)
-		VALUES ($1, $2, $3::classification_level, $4, $5, $6::text[])
+		VALUES ($1, $2, $3::classification_level, $4, $5, $6)
 		RETURNING id, name, description, classification::text, created_by, org_id,
 		          parent_id, tags, created_at, updated_at`
 
 	rows, err := s.db.QueryContext(ctx, q,
 		req.Name, req.Description, cls, userID, orgID,
-		string(tagsJSON),
+		pq.Array(tags),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create scenario: %w", err)
@@ -562,19 +565,18 @@ func (s *OOBStore) UpdateScenario(ctx context.Context, id uuid.UUID, req models.
 	} else if sc.Tags == nil {
 		sc.Tags = []string{}
 	}
-	tagsJSON, _ := json.Marshal(tagsToPGArray(sc.Tags))
 
 	const q = `
 		UPDATE scenarios
 		SET name = $1, description = $2, classification = $3::classification_level,
-		    tags = $4::text[], updated_at = NOW()
+		    tags = $4, updated_at = NOW()
 		WHERE id = $5
 		RETURNING id, name, description, classification::text, created_by, org_id,
 		          parent_id, tags, created_at, updated_at`
 
 	rows, err := s.db.QueryContext(ctx, q,
 		sc.Name, sc.Description, sc.Classification,
-		string(tagsJSON), id,
+		pq.Array(sc.Tags), id,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("update scenario: %w", err)
@@ -608,16 +610,20 @@ func (s *OOBStore) BranchScenario(ctx context.Context, sourceID uuid.UUID, branc
 		return nil, err
 	}
 
+	tags := src.Tags
+	if tags == nil {
+		tags = []string{}
+	}
+
 	const q = `
 		INSERT INTO scenarios (name, description, classification, created_by, org_id, parent_id, tags)
-		VALUES ($1, $2, $3::classification_level, $4, $5, $6, $7::text[])
+		VALUES ($1, $2, $3::classification_level, $4, $5, $6, $7)
 		RETURNING id, name, description, classification::text, created_by, org_id,
 		          parent_id, tags, created_at, updated_at`
 
-	tagsJSON, _ := json.Marshal(tagsToPGArray(src.Tags))
 	rows, err := s.db.QueryContext(ctx, q,
 		branchName, src.Description, src.Classification,
-		userID, src.OrgID, src.ID, string(tagsJSON),
+		userID, src.OrgID, src.ID, pq.Array(tags),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("branch scenario: %w", err)
@@ -632,35 +638,22 @@ func (s *OOBStore) BranchScenario(ctx context.Context, sourceID uuid.UUID, branc
 
 func scanScenario(row scanner) (*models.Scenario, error) {
 	sc := &models.Scenario{}
-	var tagsJSON []byte
+	var tags pq.StringArray
 
 	if err := row.Scan(
 		&sc.ID, &sc.Name, &sc.Description, &sc.Classification,
-		&sc.CreatedBy, &sc.OrgID, &sc.ParentID, &tagsJSON,
+		&sc.CreatedBy, &sc.OrgID, &sc.ParentID, &tags,
 		&sc.CreatedAt, &sc.UpdatedAt,
 	); err != nil {
 		return nil, fmt.Errorf("scan scenario: %w", err)
 	}
 
-	if len(tagsJSON) > 0 {
-		sc.Tags = parsePGTextArray(string(tagsJSON))
-	}
-	if sc.Tags == nil {
+	if tags != nil {
+		sc.Tags = []string(tags)
+	} else {
 		sc.Tags = []string{}
 	}
 	return sc, nil
-}
-
-// tagsToPGArray converts a string slice to a PostgreSQL array literal.
-func tagsToPGArray(tags []string) string {
-	if len(tags) == 0 {
-		return "{}"
-	}
-	quoted := make([]string, len(tags))
-	for i, t := range tags {
-		quoted[i] = `"` + strings.ReplaceAll(t, `"`, `\"`) + `"`
-	}
-	return "{" + strings.Join(quoted, ",") + "}"
 }
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────

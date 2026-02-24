@@ -219,7 +219,7 @@ function APIKeyFields({
         autoComplete="off"
         className={INPUT}
       />
-      <p className="text-xs text-gray-500 mt-1">Stored in browser session memory only — never sent to AGD servers.</p>
+      <p className="text-xs text-gray-500 mt-1">Stored in browser session memory only — not persisted to localStorage and never sent to AGD backend servers. Keys are forwarded directly to the configured AI provider.</p>
     </Field>
   )
 }
