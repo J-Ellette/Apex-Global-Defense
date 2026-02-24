@@ -322,6 +322,83 @@ Insurgent/asymmetric module (Phase 3, item 3) is **complete**. Next: Terror resp
 
 ---
 
+## Session 6 — Phase 3 Continued (2026-02-24)
+
+### Goal
+Implement the Terror Response Planning module (Phase 3, item 4).
+
+### What I Did This Session
+
+- [x] **Terror response planning module — backend** (`services/terror-svc/`)
+  - **Attack type catalog** (`app/data/attack_types.py`) — 10 attack types with full metadata:
+    - VRAM (Vehicle Ramming), ASHT (Active Shooter), SBOM (Suicide Bombing), HSTG (Hostage/Siege)
+    - EXPL (Planted Explosive), CHEM (Chemical Attack), BIOL (Biological Attack)
+    - CYBR (Cyber/Infrastructure), ASSN (Assassination), INFR (Infrastructure Attack)
+    - Each: category, lethality range, typical perpetrators/targets, detection window, countermeasures, threat indicators
+  - **Site CRUD** (`app/routers/sites.py`)
+    - `GET /terror/sites` — list with scenario/status/site_type filters
+    - `POST /terror/sites` — create site with auto-computed vulnerability score (1–10)
+    - `GET /terror/sites/{id}` — get site
+    - `PUT /terror/sites/{id}` — update site + recompute vulnerability score
+    - `DELETE /terror/sites/{id}` — cascade-deletes scenarios and plans
+    - Vulnerability score formula: 10 × (1 − mean security dimensions) × crowd density multiplier
+    - 14 site types: TRANSPORT_HUB, STADIUM, GOVERNMENT_BUILDING, HOTEL, MARKET, HOUSE_OF_WORSHIP, SCHOOL, HOSPITAL, EMBASSY, CRITICAL_INFRASTRUCTURE, FINANCIAL_CENTER, MILITARY_BASE, ENTERTAINMENT_VENUE, SHOPPING_CENTER
+  - **Threat Scenario CRUD** (`app/routers/scenarios.py`)
+    - `GET /terror/attack-types` — list attack type catalog with optional category filter
+    - `GET /terror/attack-types/{id}` — get single attack type
+    - `GET /terror/threat-scenarios` — list with scenario/site/threat_level filters
+    - `POST /terror/threat-scenarios` — log threat scenario for a site
+    - `GET /terror/threat-scenarios/{id}` — get scenario
+    - `PUT /terror/threat-scenarios/{id}` — update scenario
+    - `DELETE /terror/threat-scenarios/{id}` — delete scenario
+  - **Response Plan CRUD** (`app/routers/plans.py`)
+    - `GET /terror/response-plans` — list with filters
+    - `POST /terror/response-plans` — create multi-agency response plan
+    - `GET /terror/response-plans/{id}` — get plan
+    - `PUT /terror/response-plans/{id}` — update plan
+    - `DELETE /terror/response-plans/{id}` — delete plan
+    - Plans include: agency assignments (role: PRIMARY/SUPPORTING/NOTIFIED), evacuation routes, shelter capacity, ETA
+  - **Vulnerability Analysis** (`app/routers/analysis.py`)
+    - `GET /terror/sites/{id}/analysis` — full vulnerability analysis
+    - Scores all 10 attack types against site using: lethality × vulnerability × site-type affinity × crowd factor
+    - Site-type affinity map: each site type has specific high-risk attack vectors
+    - Dimension-specific recommendations (physical_security, access_control, surveillance, emergency_response)
+    - Attack-specific recommendations (VRAM → bollards, EXPL/SBOM → explosive detection, CHEM/BIOL → CBRN sensors)
+  - `Dockerfile` + `requirements.txt`
+  - 26 unit tests — all passing
+
+- [x] **DB schema** (`db/init/006_terror_schema.sql`)
+  - `terror_sites` — target sites with 4 security dimensions + computed vulnerability_score
+  - `terror_threat_scenarios` — threat scenarios linking sites to attack types
+  - `terror_response_plans` — multi-agency response plans with JSONB agencies/routes
+
+- [x] **Terror module — frontend** (`frontend/src/modules/terror/TerrorPage.tsx`)
+  - **Site Vulnerability tab** — site cards with vulnerability bars and dimension breakdowns; add site modal with slider-based security dimension scoring; site detail modal with vulnerability analysis and attack risk ranking
+  - **Threat Scenarios tab** — attack type catalog cards (expandable: description, perpetrators, targets, indicators, countermeasures); active threat scenario log with threat level badges
+  - **Response Planning tab** — response plan list with agency assignments and evacuation routes; multi-agency plan builder with agency role selection (PRIMARY/SUPPORTING/NOTIFIED)
+
+- [x] Added `terrorClient.ts` — Axios client for terror-svc (port 8089, bearer token auth)
+- [x] Added `frontend/src/shared/api/types/terror.ts` — full TypeScript type definitions
+- [x] Added `terrorApi` to `endpoints.ts` — all terror response operations
+- [x] Updated `frontend/src/shared/api/types/index.ts` — re-exports terror types
+- [x] Updated `frontend/src/app/router.tsx` — added `/terror` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added Terror Response module card
+- [x] Updated `docker-compose.dev.yml` — added `terror-svc` (port 8089) + `VITE_TERROR_API_URL`
+- [x] Updated `buildsheet.md` Phase 3 checklist — terror response planning module marked done
+
+### Stopping Point
+
+Terror response planning module (Phase 3, item 4) is **complete**. Next: AI-assisted intel analysis.
+
+### What's Next (Session 7 — Phase 3 continued)
+
+- [ ] AI-assisted intel analysis (entity extraction, threat assessment)
+- [ ] OSINT ingestion pipeline (ACLED, UCDP, RSS feeds)
+- [ ] Elasticsearch + semantic search (pgvector)
+- [ ] Civilian impact overlays (population, refugee modeling)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -333,6 +410,7 @@ Insurgent/asymmetric module (Phase 3, item 3) is **complete**. Next: Terror resp
 | cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 |
 | cbrn-svc | 8087 | Python/FastAPI | ✅ Session 4 |
 | asym-svc | 8088 | Python/FastAPI | ✅ Session 5 |
+| terror-svc | 8089 | Python/FastAPI | ✅ Session 6 |
 | map-svc | — | Go | ⏳ Future |
 | intel-svc | — | Python | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
@@ -349,3 +427,4 @@ Insurgent/asymmetric module (Phase 3, item 3) is **complete**. Next: Terror resp
 - **Cyber svc**: `http://localhost:8086/api/v1` (consumed by frontend `VITE_CYBER_API_URL`)
 - **CBRN svc**: `http://localhost:8087/api/v1` (consumed by frontend `VITE_CBRN_API_URL`)
 - **Asym svc**: `http://localhost:8088/api/v1` (consumed by frontend `VITE_ASYM_API_URL`)
+- **Terror svc**: `http://localhost:8089/api/v1` (consumed by frontend `VITE_TERROR_API_URL`)

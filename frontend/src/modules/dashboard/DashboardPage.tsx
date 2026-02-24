@@ -87,6 +87,12 @@ const MODULE_CARDS = [
     description: 'Insurgent cell network modeling, IED threat tracking, and COIN (counter-insurgency) planning.',
   },
   {
+    href: '/terror',
+    icon: '🚨',
+    title: 'Terror Response',
+    description: 'Site vulnerability assessment, terror threat scenario planning, and multi-agency response coordination.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',
