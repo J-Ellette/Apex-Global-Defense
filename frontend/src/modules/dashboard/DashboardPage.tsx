@@ -111,6 +111,12 @@ const MODULE_CARDS = [
     description: 'Sanction mapping, trade disruption modeling, and economic impact assessment.',
   },
   {
+    href: '/infoops',
+    icon: '📡',
+    title: 'Information Operations',
+    description: 'Track influence campaigns, disinformation indicators, and narrative threats.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',
