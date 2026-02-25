@@ -400,7 +400,7 @@ make sbom            # Generate SBOM (Syft → sbom.json)
 
 ## Phase 4 Roadmap
 
-Phase 4 (Enterprise) is **nearly complete**:
+Phase 4 (Enterprise) is **complete**:
 
 - [x] Multi-user collaboration with role-based map control
 - [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
@@ -409,11 +409,33 @@ Phase 4 (Enterprise) is **nearly complete**:
 - [x] Classification handling hardening (row-level security, labels)
 - [x] FedRAMP documentation and controls
 - [x] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
-- [ ] Mobile app (React Native, read-only, offline maps)
+- [ ] Mobile app (React Native, read-only, offline maps) — deferred
 - [x] Economic warfare module
 - [x] Information operations / disinformation tracking
 - [x] API for external system integration (ArcGIS, Google Earth)
 - [x] Training mode (exercise inject system, scoring)
+
+---
+
+## Improvements Roadmap
+
+Progress against [`improvements.md`](./improvements.md):
+
+| Priority | Area | Status |
+|----------|------|--------|
+| A | Simulation Engine Fidelity (combat state model, turn resolver, Monte Carlo, logistics, checkpointing) | ⏳ Future |
+| B | CI/CD — fix stale service matrices in CI + Makefile | ✅ Complete |
+| B | CI/CD — `docker-compose.test.yml` integration test harness | ✅ Complete |
+| B | CI/CD — matrix-based multi-service image publishing | ✅ Complete |
+| B | CI/CD — repo guard check (service list drift detection) | ✅ Complete |
+| C | Runtime reliability — explicit fallback policy, health reporting | ⏳ Future |
+| D | Security — `.env.example` templates (root + frontend) | ✅ Complete |
+| D | Security — env-var-driven secrets in `docker-compose.dev.yml` | ✅ Complete |
+| D | Security — CI secret scanning + policy checks | ⏳ Future |
+| E | Architecture — SemVer contract governance, shared Python package | ⏳ Future |
+| F | Observability — OpenTelemetry, dashboards, runbooks | ⏳ Future |
+| G | Developer experience — service-scoped make targets (`svc-test`, `svc-lint`) | ✅ Complete |
+| G | Developer experience — one-command smoke script (`scripts/smoke-test.sh`) | ✅ Complete |
 
 ### Phase 4 New Features
 

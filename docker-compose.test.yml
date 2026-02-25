@@ -1,0 +1,394 @@
+# Integration test harness.
+# Starts the minimum infrastructure and all backend services, runs health checks,
+# then exits.  Used by the CI integration-test job:
+#   docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+#   docker compose -f docker-compose.test.yml down -v
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: agd_test
+      POSTGRES_USER: agd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testpass}
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agd -d agd_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  auth-svc:
+    build:
+      context: ./services/auth-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8080"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  oob-svc:
+    build:
+      context: ./services/oob-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8080"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  collab-svc:
+    build:
+      context: ./services/collab-svc
+      dockerfile: Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8080"
+      ENV: test
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  cyber-svc:
+    build:
+      context: ./services/cyber-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  cbrn-svc:
+    build:
+      context: ./services/cbrn-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  asym-svc:
+    build:
+      context: ./services/asym-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  terror-svc:
+    build:
+      context: ./services/terror-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  intel-svc:
+    build:
+      context: ./services/intel-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  civilian-svc:
+    build:
+      context: ./services/civilian-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  reporting-svc:
+    build:
+      context: ./services/reporting-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  econ-svc:
+    build:
+      context: ./services/econ-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  infoops-svc:
+    build:
+      context: ./services/infoops-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gis-export-svc:
+    build:
+      context: ./services/gis-export-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  training-svc:
+    build:
+      context: ./services/training-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  sim-orchestrator:
+    build:
+      context: ./services/sim-orchestrator
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-testpass}@postgres:5432/agd_test
+      REDIS_URL: redis://redis:6379
+      USE_GRPC_SIM_ENGINE: "false"
+      JWT_SECRET: ${JWT_SECRET:-test-secret-not-for-prod}
+      PORT: "8000"
+      ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Smoke-test runner — exercises /health on every service and exits 0 on success.
+  integration-test-runner:
+    image: curlimages/curl:8.7.1
+    depends_on:
+      auth-svc:
+        condition: service_healthy
+      oob-svc:
+        condition: service_healthy
+      collab-svc:
+        condition: service_healthy
+      cyber-svc:
+        condition: service_healthy
+      cbrn-svc:
+        condition: service_healthy
+      asym-svc:
+        condition: service_healthy
+      terror-svc:
+        condition: service_healthy
+      intel-svc:
+        condition: service_healthy
+      civilian-svc:
+        condition: service_healthy
+      reporting-svc:
+        condition: service_healthy
+      econ-svc:
+        condition: service_healthy
+      infoops-svc:
+        condition: service_healthy
+      gis-export-svc:
+        condition: service_healthy
+      training-svc:
+        condition: service_healthy
+      sim-orchestrator:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "=== AGD Integration Health Check ==="
+        for url in \
+          http://auth-svc:8080/health \
+          http://oob-svc:8080/health \
+          http://collab-svc:8080/health \
+          http://cyber-svc:8000/health \
+          http://cbrn-svc:8000/health \
+          http://asym-svc:8000/health \
+          http://terror-svc:8000/health \
+          http://intel-svc:8000/health \
+          http://civilian-svc:8000/health \
+          http://reporting-svc:8000/health \
+          http://econ-svc:8000/health \
+          http://infoops-svc:8000/health \
+          http://gis-export-svc:8000/health \
+          http://training-svc:8000/health \
+          http://sim-orchestrator:8000/health; do
+          echo -n "  GET $url ... "
+          curl -sf "$url" && echo "OK" || (echo "FAIL" && exit 1)
+        done
+        echo "=== All health checks passed ==="
