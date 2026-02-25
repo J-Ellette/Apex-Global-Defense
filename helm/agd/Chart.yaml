@@ -1,0 +1,13 @@
+apiVersion: v2
+name: agd
+description: Apex Global Defense — multi-domain defense simulation platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - defense
+  - simulation
+  - geospatial
+home: https://github.com/Apex-Global-Defense/Apex-Global-Defense
+maintainers:
+  - name: AGD Team

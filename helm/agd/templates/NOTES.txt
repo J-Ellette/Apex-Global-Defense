@@ -1,0 +1,34 @@
+Apex Global Defense has been deployed!
+
+Namespace: {{ include "agd.namespace" . }}
+
+Access the application:
+{{- if .Values.ingress.enabled }}
+  URL: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+  Run the following to port-forward the frontend:
+    kubectl port-forward -n {{ include "agd.namespace" . }} svc/frontend 8080:80
+  Then open: http://localhost:8080
+{{- end }}
+
+Key service endpoints (internal cluster DNS):
+  Auth:        http://auth-svc:8082
+  OOB:         http://oob-svc:8083
+  Collab (WS): ws://collab-svc:8084
+  Sim:         http://sim-orchestrator:8085
+  Keycloak:    http://keycloak:8080
+  Tiles:       http://mbtiles-server:8080
+  Ollama:      http://ollama:11434
+
+{{- if .Values.airgap }}
+
+Air-gap mode is ENABLED. Ensure all images and Ollama models were loaded
+with scripts/airgap-load.sh and scripts/ollama-pull.sh before deploying.
+{{- end }}
+
+Classification: {{ .Values.classificationLevel }}
+
+⚠  Remember to rotate the JWT secret and all passwords before going live:
+     --set jwt.secret=<strong-random-value>
+     --set postgres.password=<strong-password>
+     --set keycloak.adminPassword=<strong-password>

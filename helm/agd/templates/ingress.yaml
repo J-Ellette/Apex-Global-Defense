@@ -1,0 +1,122 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agd-ingress
+  namespace: {{ include "agd.namespace" . }}
+  labels:
+    {{- include "agd.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /api/auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-svc
+                port:
+                  number: {{ .Values.authSvc.port }}
+          - path: /api/oob(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: oob-svc
+                port:
+                  number: {{ .Values.oobSvc.port }}
+          - path: /api/sim(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sim-orchestrator
+                port:
+                  number: {{ .Values.simOrchestrator.port }}
+          - path: /api/cyber(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cyber-svc
+                port:
+                  number: {{ .Values.cyberSvc.port }}
+          - path: /api/cbrn(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cbrn-svc
+                port:
+                  number: {{ .Values.cbrnSvc.port }}
+          - path: /api/asym(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: asym-svc
+                port:
+                  number: {{ .Values.asymSvc.port }}
+          - path: /api/terror(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: terror-svc
+                port:
+                  number: {{ .Values.terrorSvc.port }}
+          - path: /api/intel(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: intel-svc
+                port:
+                  number: {{ .Values.intelSvc.port }}
+          - path: /api/civilian(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: civilian-svc
+                port:
+                  number: {{ .Values.civilianSvc.port }}
+          - path: /api/reporting(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: reporting-svc
+                port:
+                  number: {{ .Values.reportingSvc.port }}
+          - path: /ws(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: collab-svc
+                port:
+                  number: {{ .Values.collabSvc.port }}
+          - path: /tiles(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: mbtiles-server
+                port:
+                  number: 8080
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.frontend.port }}
+{{- end }}

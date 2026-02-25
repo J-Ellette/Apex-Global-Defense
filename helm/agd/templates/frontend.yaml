@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ include "agd.namespace" . }}
+  labels:
+    {{- include "agd.labels" . | nindent 4 }}
+    app.kubernetes.io/name: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.frontend.port }}
+      targetPort: {{ .Values.frontend.port }}
+      name: http
+  selector:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ include "agd.namespace" . }}
+  labels:
+    {{- include "agd.labels" . | nindent 4 }}
+    app.kubernetes.io/name: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: {{ include "agd.image" (dict "img" .Values.frontend.image "context" .) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: VITE_API_URL
+              value: "/api/auth/v1"
+            - name: VITE_OOB_API_URL
+              value: "/api/oob/v1"
+            - name: VITE_SIM_API_URL
+              value: "/api/sim/v1"
+            - name: VITE_CYBER_API_URL
+              value: "/api/cyber/v1"
+            - name: VITE_CBRN_API_URL
+              value: "/api/cbrn/v1"
+            - name: VITE_ASYM_API_URL
+              value: "/api/asym/v1"
+            - name: VITE_TERROR_API_URL
+              value: "/api/terror/v1"
+            - name: VITE_INTEL_API_URL
+              value: "/api/intel/v1"
+            - name: VITE_CIVILIAN_API_URL
+              value: "/api/civilian/v1"
+            - name: VITE_REPORTING_API_URL
+              value: "/api/reporting/v1"
+            - name: VITE_TILE_SERVER
+              value: "/tiles"
+            - name: VITE_WS_URL
+              value: "/ws"
+            - name: VITE_AIRGAP
+              value: {{ .Values.airgap | quote }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
