@@ -769,14 +769,103 @@ Phase 4 items 5–6 are **complete**:
 - ✅ Classification handling hardening (row-level security, labels)
 - ✅ FedRAMP documentation and controls
 
-### What's Next (Session 11 — Phase 4 continued)
+---
 
-- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
-- [ ] Mobile app (React Native, read-only, offline maps)
-- [ ] Economic warfare module
-- [ ] Information operations / disinformation tracking
-- [ ] API for external system integration (ArcGIS, Google Earth)
-- [ ] Training mode (exercise inject system, scoring)
+## Session 11 — Phase 4 Completion (2026-02-25)
+
+### Goal
+Complete all remaining Phase 4 items (except Mobile app, which is explicitly deferred).
+
+### What I Did This Session
+
+#### Item 7: Air-gap deployment package ✅
+
+- [x] **`helm/agd/`** — Full Helm chart for Kubernetes deployment:
+  - `Chart.yaml`, `values.yaml` covering all 16 services + infra
+  - `templates/_helpers.tpl` with image, labels, namespace, DB URL helpers
+  - Per-service Deployment + Service templates for all 15 application services
+  - StatefulSets for postgres and ollama (with PVCs)
+  - `ingress.yaml` — nginx path-based routing + WebSocket support
+  - `configmap.yaml`, `secret.yaml` — shared config + JWT/DB credentials
+  - `NOTES.txt` — post-install instructions
+
+- [x] **`scripts/airgap-pack.sh`** — Builds/pulls all Docker images, saves as .tar, packages Helm chart, creates `agd-airgap-bundle.tar.gz`
+- [x] **`scripts/airgap-load.sh`** — Loads image bundle; optional `--push <registry>` for multi-node clusters
+- [x] **`scripts/ollama-pull.sh`** — Three modes: pull (live), `--save` (archive), `--load` (restore)
+- [x] **`docs/airgap/README.md`** — 9-section air-gap deployment guide
+
+#### Item 8: Economic warfare module ✅
+
+- [x] **`services/econ-svc/`** — Python/FastAPI service on port 8093:
+  - Sanction target CRUD (8 sanction types, 4 status values)
+  - Trade route CRUD (dependency levels, disruption tracking)
+  - Economic indicators (per-country, per-year)
+  - Deterministic impact engine: GDP/inflation/unemployment/currency/trade impact by sanction type
+  - Classification ceiling enforcement throughout
+  - 19 passing tests
+
+- [x] **`db/init/012_econ_schema.sql`** — 4 tables + seed (Russia/Iran/DPRK/Belarus/Venezuela sanctions, 5 trade routes)
+- [x] **Frontend**: `econClient.ts`, `types/econ.ts`, `EconPage.tsx` (4-tab UI), `/econ` route, dashboard card, docker-compose wiring
+
+#### Item 9: Information operations / disinformation tracking ✅
+
+- [x] **`services/infoops-svc/`** — Python/FastAPI service on port 8094:
+  - Narrative threat CRUD + `/analyze` endpoint (spread score, virality, counter-effectiveness)
+  - Influence campaign CRUD
+  - Disinformation indicator CRUD (8 indicator types)
+  - Attribution assessment CRUD
+  - 20 passing tests
+
+- [x] **`db/init/013_infoops_schema.sql`** — 4 tables + seed (Russian energy FUD, Taiwan justification narratives, Secondary Infektion campaign)
+- [x] **Frontend**: `infoopsClient.ts`, `types/infoops.ts`, `InfoOpsPage.tsx` (4-tab UI with analyze modal), `/infoops` route, dashboard card
+
+#### Item 10: API for external system integration (ArcGIS, Google Earth) ✅
+
+- [x] **`services/gis-export-svc/`** — Python/FastAPI service on port 8095:
+  - GeoJSON export for 9 layer types with COUNTRY_CENTROIDS lookup
+  - Pure-Python KML formatter with proper XML escaping
+  - External integration config CRUD (ArcGIS/Google Earth/WMS/WFS)
+  - `POST /integrations/{id}/test` stub
+  - 15 passing tests
+
+- [x] **`db/init/014_gis_export_schema.sql`** — integration config table + ArcGIS/Google Earth seed records
+- [x] **Frontend**: `gisClient.ts`, `types/gis.ts`, GIS Integrations tab added to AdminPage
+- [x] **docker-compose**: `gis-export-svc` at port 8095
+
+#### Item 11: Training mode ✅
+
+- [x] **`services/training-svc/`** — Python/FastAPI service on port 8096:
+  - Exercise CRUD with lifecycle (DRAFT→SCHEDULED→ACTIVE→PAUSED→COMPLETED)
+  - Inject CRUD: 12 inject types, 3 trigger modes, fire + acknowledge endpoints
+  - Objective CRUD + scoring endpoint
+  - Deterministic scoring engine: weighted objectives → grade A–F, timeliness/accuracy/communication sub-scores
+  - 29 passing tests
+
+- [x] **`db/init/015_training_schema.sql`** — 3 tables (exercises, injects, objectives) with CASCADE FKs + seed data
+- [x] **Frontend**: `trainingClient.ts`, `types/training.ts`, `TrainingPage.tsx` (3-tab UI with score modal), `/training` route, dashboard card
+
+### Stopping Point
+
+Phase 4 is now **complete** (except Mobile app, deferred per instructions):
+- ✅ Multi-user collaboration with role-based map control
+- ✅ Commercial intel feed integration
+- ✅ STIX/TAXII cyber threat feed consumer
+- ✅ Auto-report generation
+- ✅ Classification handling hardening
+- ✅ FedRAMP documentation and controls
+- ✅ Air-gap deployment package
+- ⏭️ Mobile app (deferred)
+- ✅ Economic warfare module
+- ✅ Information operations / disinformation tracking
+- ✅ API for external system integration (ArcGIS, Google Earth)
+- ✅ Training mode
+
+### What's Next (Session 12 — Future phases)
+
+- Mobile app (React Native, read-only, offline maps) — when undeferred
+- map-svc (Go, self-hosted tile management API)
+- ai-svc (Python, LLM integration + fallback routing)
+- sim-engine (C++/Rust, high-fidelity physics engine)
 
 ---
 
@@ -795,6 +884,10 @@ Phase 4 items 5–6 are **complete**:
 | intel-svc | 8090 | Python/FastAPI | ✅ Session 7 + commercial feeds (Session 9) |
 | civilian-svc | 8091 | Python/FastAPI | ✅ Session 8 |
 | reporting-svc | 8092 | Python/FastAPI | ✅ Session 9 |
+| econ-svc | 8093 | Python/FastAPI | ✅ Session 11 |
+| infoops-svc | 8094 | Python/FastAPI | ✅ Session 11 |
+| gis-export-svc | 8095 | Python/FastAPI | ✅ Session 11 |
+| training-svc | 8096 | Python/FastAPI | ✅ Session 11 |
 | map-svc | — | Go | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
 | sim-engine | — | C++/Rust | ⏳ Future |
@@ -813,3 +906,7 @@ Phase 4 items 5–6 are **complete**:
 - **Intel svc**: `http://localhost:8090/api/v1` (consumed by frontend `VITE_INTEL_API_URL`)
 - **Civilian svc**: `http://localhost:8091/api/v1` (consumed by frontend `VITE_CIVILIAN_API_URL`)
 - **Reporting svc**: `http://localhost:8092/api/v1` (consumed by frontend `VITE_REPORTING_API_URL`)
+- **Econ svc**: `http://localhost:8093/api/v1` (consumed by frontend `VITE_ECON_API_URL`)
+- **InfoOps svc**: `http://localhost:8094/api/v1` (consumed by frontend `VITE_INFOOPS_API_URL`)
+- **GIS Export svc**: `http://localhost:8095/api/v1` (consumed by frontend `VITE_GIS_API_URL`)
+- **Training svc**: `http://localhost:8096/api/v1` (consumed by frontend `VITE_TRAINING_API_URL`)
