@@ -1617,10 +1617,10 @@ class ExerciseScorer:
 ### Phase 4 — Enterprise (Months 21–28)
 **Goal**: Enterprise-grade collaboration, integrations, and deployment hardening.
 
-- [ ] Multi-user collaboration with role-based map control
-- [ ] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
-- [ ] STIX/TAXII cyber threat feed consumer
-- [ ] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
+- [x] Multi-user collaboration with role-based map control
+- [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
+- [x] STIX/TAXII cyber threat feed consumer
+- [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
 - [ ] Classification handling hardening (row-level security, labels)
 - [ ] FedRAMP documentation and controls
 - [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)

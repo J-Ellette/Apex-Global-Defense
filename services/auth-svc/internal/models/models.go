@@ -62,21 +62,22 @@ const (
 	PermControlSim      Permission = "simulation:control"
 	PermManageUsers     Permission = "users:manage"
 	PermManageClassification Permission = "classification:manage"
+	PermMapControl      Permission = "map:control"
 )
 
 // RolePermissions maps roles to their default permissions.
 var RolePermissions = map[Role][]Permission{
 	RoleViewer:    {PermReadScenario, PermReadOOB},
 	RoleAnalyst:   {PermReadScenario, PermReadOOB, PermReadIntel, PermWriteIntel},
-	RolePlanner:   {PermReadScenario, PermWriteScenario, PermReadOOB, PermWriteOOB, PermReadIntel},
-	RoleCommander: {PermReadScenario, PermWriteScenario, PermReadOOB, PermWriteOOB, PermReadIntel, PermWriteIntel},
+	RolePlanner:   {PermReadScenario, PermWriteScenario, PermReadOOB, PermWriteOOB, PermReadIntel, PermMapControl},
+	RoleCommander: {PermReadScenario, PermWriteScenario, PermReadOOB, PermWriteOOB, PermReadIntel, PermWriteIntel, PermMapControl},
 	RoleSimOperator: {
-		PermReadScenario, PermReadOOB, PermRunSimulation, PermControlSim,
+		PermReadScenario, PermReadOOB, PermRunSimulation, PermControlSim, PermMapControl,
 	},
 	RoleAdmin: {
 		PermReadScenario, PermWriteScenario, PermReadOOB, PermWriteOOB,
 		PermReadIntel, PermWriteIntel, PermRunSimulation, PermControlSim,
-		PermManageUsers,
+		PermManageUsers, PermMapControl,
 	},
 	RoleClassificationOfficer: {PermManageClassification},
 }

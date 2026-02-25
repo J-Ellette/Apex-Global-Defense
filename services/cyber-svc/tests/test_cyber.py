@@ -239,3 +239,63 @@ def test_simulate_attack():
     assert isinstance(data["persistence_achieved"], bool)
     assert data["damage_level"] in ("NONE", "MINIMAL", "MODERATE", "SEVERE", "CATASTROPHIC")
 
+
+# ---------------------------------------------------------------------------
+# STIX/TAXII endpoints
+# ---------------------------------------------------------------------------
+
+def test_list_stix_indicators_empty():
+    fake_db = AsyncMock()
+    fake_db.fetch = AsyncMock(return_value=[])
+
+    with TestClient(app) as client:
+        app.state.db = fake_db
+        resp = client.get("/api/v1/cyber/stix/indicators")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_get_stix_indicator_not_found():
+    fake_db = AsyncMock()
+    fake_db.fetchrow = AsyncMock(return_value=None)
+
+    with TestClient(app) as client:
+        app.state.db = fake_db
+        resp = client.get(f"/api/v1/cyber/stix/indicators/{uuid4()}")
+    assert resp.status_code == 404
+
+
+def test_delete_stix_indicator_not_found():
+    fake_db = AsyncMock()
+    fake_db.execute = AsyncMock(return_value="DELETE 0")
+
+    with TestClient(app) as client:
+        app.state.db = fake_db
+        resp = client.delete(f"/api/v1/cyber/stix/indicators/{uuid4()}")
+    assert resp.status_code == 404
+
+
+def test_taxii_ingest_dry_run():
+    """TAXII ingest with dry_run=True should return synthetic data without hitting DB."""
+    fake_db = AsyncMock()
+    fake_db.execute = AsyncMock(return_value="INSERT 0 1")
+
+    with TestClient(app) as client:
+        app.state.db = fake_db
+        resp = client.post(
+            "/api/v1/cyber/taxii/ingest",
+            json={
+                "server_url": "https://taxii.example.com",
+                "collection_id": "test-collection",
+                "max_items": 10,
+                "dry_run": True,
+            },
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["dry_run"] is True
+    assert data["items_fetched"] >= 1
+    assert data["items_saved"] >= 1
+    # No DB inserts in dry_run mode
+    fake_db.execute.assert_not_called()
+

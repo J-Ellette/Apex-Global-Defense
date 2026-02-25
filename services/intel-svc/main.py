@@ -26,6 +26,9 @@ async def lifespan(application: FastAPI):
         acled_key=settings.acled_api_key,
         acled_email=settings.acled_email,
         ucdp_key=settings.ucdp_api_key,
+        recorded_future_key=settings.recorded_future_api_key,
+        maxar_key=settings.maxar_api_key,
+        janes_key=settings.janes_api_key,
     )
     logger.info("intel-svc started")
     yield

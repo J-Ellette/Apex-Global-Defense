@@ -99,6 +99,12 @@ const MODULE_CARDS = [
     description: 'Population zone management, conflict civilian impact assessment, refugee flow modeling, and humanitarian corridor tracking.',
   },
   {
+    href: '/reporting',
+    icon: '📋',
+    title: 'Reports',
+    description: 'Auto-generate SITREP, INTSUM, and CONOPS briefs from simulation and intelligence data.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',

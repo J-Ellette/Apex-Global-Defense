@@ -173,3 +173,89 @@ class SimulateAttackResult(BaseModel):
     narrative: str
     ttd_minutes: int | None    # time-to-detect (None if undetected)
     persistence_achieved: bool
+
+
+# ---------------------------------------------------------------------------
+# STIX/TAXII Threat Intelligence
+# ---------------------------------------------------------------------------
+
+class PatternType(str, Enum):
+    STIX = "stix"
+    PCRE = "pcre"
+    YARA = "yara"
+    SIGMA = "sigma"
+
+
+class KillChainPhase(BaseModel):
+    kill_chain_name: str
+    phase_name: str
+
+
+class ExternalReference(BaseModel):
+    source_name: str
+    url: str | None = None
+    external_id: str | None = None
+    description: str | None = None
+
+
+class STIXIndicator(BaseModel):
+    id: UUID
+    stix_id: str
+    stix_type: str = "indicator"
+    spec_version: str = "2.1"
+    name: str
+    description: str | None = None
+    pattern: str
+    pattern_type: PatternType = PatternType.STIX
+    indicator_types: list[str] = Field(default_factory=list)
+    kill_chain_phases: list[KillChainPhase] = Field(default_factory=list)
+    confidence: int = Field(default=50, ge=0, le=100)
+    labels: list[str] = Field(default_factory=list)
+    valid_from: datetime
+    valid_until: datetime | None = None
+    created: datetime
+    modified: datetime
+    created_by_ref: str | None = None
+    external_references: list[ExternalReference] = Field(default_factory=list)
+    taxii_collection: str | None = None
+    taxii_server: str | None = None
+    classification: str = "UNCLASS"
+    scenario_id: UUID | None = None
+    ingested_at: datetime
+
+
+class CreateSTIXIndicatorRequest(BaseModel):
+    stix_id: str | None = None                  # auto-generated if omitted
+    name: str
+    description: str | None = None
+    pattern: str
+    pattern_type: PatternType = PatternType.STIX
+    indicator_types: list[str] = Field(default_factory=list)
+    kill_chain_phases: list[KillChainPhase] = Field(default_factory=list)
+    confidence: int = Field(default=50, ge=0, le=100)
+    labels: list[str] = Field(default_factory=list)
+    valid_from: datetime
+    valid_until: datetime | None = None
+    external_references: list[ExternalReference] = Field(default_factory=list)
+    taxii_collection: str | None = None
+    taxii_server: str | None = None
+    classification: str = "UNCLASS"
+    scenario_id: UUID | None = None
+
+
+class TAXIIIngestRequest(BaseModel):
+    server_url: str = Field(description="TAXII 2.1 server URL")
+    collection_id: str = Field(description="TAXII collection ID to poll")
+    api_key: str | None = Field(default=None, description="Bearer token / API key for authentication")
+    max_items: int = Field(default=100, ge=1, le=1000)
+    dry_run: bool = False
+
+
+class TAXIIIngestResult(BaseModel):
+    server_url: str
+    collection_id: str
+    items_fetched: int
+    items_saved: int
+    errors: list[str] = Field(default_factory=list)
+    dry_run: bool = False
+    duration_seconds: float

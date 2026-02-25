@@ -47,7 +47,7 @@ Apex Global Defense is a simulation and strategic planning platform designed for
 
 ---
 
-## Implemented Features (Phases 1–3)
+## Implemented Features (Phases 1–3 + Phase 4 Start)
 
 ### Phase 1 — MVP ✅
 
@@ -109,6 +109,43 @@ Apex Global Defense is a simulation and strategic planning platform designed for
 - Humanitarian corridor management (status: OPEN/RESTRICTED/CLOSED)
 - Map overlays: population density circles, refugee flow lines, corridor status lines
 
+### Phase 4 — Enterprise (In Progress)
+
+#### Multi-user collaboration with role-based map control ✅
+- `collab-svc` extended with per-room map controller tracking
+- Role-based access: only planners, commanders, sim_operators, and admins may request map control
+- New REST endpoints: `GET/POST/DELETE /rooms/{scenario_id}/control`
+- WS message types: `map:control:request`, `map:control:granted`, `map:control:released`, `map:control:busy`, `map:control:denied`
+- `CollabPanel` floating UI on map page — presence list + request/release map control button
+- `map:control` permission added to `auth-svc` RBAC model
+
+#### Commercial intel feed integration ✅
+- `RecordedFutureAdapter` — Recorded Future Connect API (stub/synthetic for dev/air-gap)
+- `MaxarAdapter` — Maxar WorldView/GeoEye satellite imagery IMINT (stub/synthetic)
+- `JanesAdapter` — Jane's Defence Intelligence TECHINT (stub/synthetic)
+- All three adapters registered in `intel-svc` and accessible via the OSINT pipeline UI
+
+#### STIX/TAXII cyber threat feed consumer ✅
+- New DB schema: `stix_indicators` table (STIX 2.1 object model)
+- `cyber-svc` extended with STIX/TAXII router:
+  - `GET/POST /cyber/stix/indicators` — list and manually create STIX indicators
+  - `GET /cyber/stix/indicators/{id}` — get indicator
+  - `DELETE /cyber/stix/indicators/{id}` — delete indicator
+  - `POST /cyber/taxii/ingest` — poll a TAXII 2.1 server collection; falls back to 5-indicator synthetic bundle (APT29 Cobalt Strike, SUNBURST, Industroyer2, Lazarus Group, BlackEnergy3 YARA)
+- Pattern types: stix / pcre / yara / sigma
+- Frontend STIX types and `taxiiApi` methods in `cyberApi`
+
+#### Auto-report generation (SITREP, INTSUM, CONOPS briefs) ✅
+- New service: `reporting-svc` (Python/FastAPI, port 8092)
+- `POST /reports/generate` — generate a SITREP, INTSUM, or CONOPS from simulation + intel data
+- Deterministic NATO-format template generators:
+  - **SITREP**: period, situation summary, friendly/enemy forces, significant events, logistics, commander assessment
+  - **INTSUM**: threat level, enemy disposition/intentions, key developments, cyber/CBRN threats, ISR gaps, analyst assessment
+  - **CONOPS**: mission statement, commander's intent, end state, scheme of maneuver, execution phases, tasks to subordinates, risk assessment
+- Full CRUD: list, get, update (title, status, content), approve, delete
+- Report statuses: DRAFT → FINAL → APPROVED
+- Frontend `ReportingPage` at `/reporting` — two-panel view (report list + formatted content viewer); Generate Report modal with report type, classification, context, scenario/run binding
+
 ---
 
 ## Architecture Overview
@@ -126,17 +163,17 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 |---------|------|----------|--------|
 | `auth-svc` | 8082 | Go | ✅ Complete |
 | `oob-svc` | 8083 | Go | ✅ Complete |
-| `collab-svc` | 8084 | Go | ✅ Complete |
+| `collab-svc` | 8084 | Go | ✅ Complete + map control |
 | `sim-orchestrator` | 8085 | Python/FastAPI | ✅ Complete |
-| `cyber-svc` | 8086 | Python/FastAPI | ✅ Complete |
+| `cyber-svc` | 8086 | Python/FastAPI | ✅ Complete + STIX/TAXII |
 | `cbrn-svc` | 8087 | Python/FastAPI | ✅ Complete |
 | `asym-svc` | 8088 | Python/FastAPI | ✅ Complete |
 | `terror-svc` | 8089 | Python/FastAPI | ✅ Complete |
-| `intel-svc` | 8090 | Python/FastAPI | ✅ Complete |
+| `intel-svc` | 8090 | Python/FastAPI | ✅ Complete + commercial feeds |
 | `civilian-svc` | 8091 | Python/FastAPI | ✅ Complete |
+| `reporting-svc` | 8092 | Python/FastAPI | ✅ Complete (Phase 4) |
 | `map-svc` | — | Go | ⏳ Phase 4 |
 | `ai-svc` | — | Python | ⏳ Phase 4 |
-| `reporting-svc` | — | Python | ⏳ Phase 4 |
 | `sim-engine` | — | C++/Rust | ⏳ Phase 4 |
 
 ### Infrastructure Services (dev)
@@ -223,6 +260,7 @@ All REST APIs accept `Authorization: Bearer <jwt>` and return `application/json`
 | Terror | `http://localhost:8089/api/v1/terror` | `GET /sites`, `GET /attack-types`, `GET /response-plans` |
 | Intel | `http://localhost:8090/api/v1/intel` | `GET /intel`, `POST /intel/search`, `POST /extract`, `POST /threat-assess` |
 | Civilian | `http://localhost:8091/api/v1/civilian` | `GET /population`, `POST /impact/assess`, `GET /flows`, `GET /corridors` |
+| Reporting | `http://localhost:8092/api/v1` | `POST /reports/generate`, `GET /reports`, `GET /reports/{id}`, `POST /reports/{id}/approve` |
 
 All services expose a `GET /health` endpoint for readiness checks.
 
@@ -237,15 +275,16 @@ The React frontend (`frontend/`) is a single-page application built with Vite + 
 | Route | Module | Description |
 |-------|--------|-------------|
 | `/` | Dashboard | Module overview and quick-launch cards |
-| `/map` | Map | Interactive globe with layer panel and annotation toolbar |
+| `/map` | Map | Interactive globe with layer panel, annotation toolbar, and collaboration panel |
 | `/oob` | Order of Battle | Browse and manage military units by country |
 | `/simulation` | Simulation | Run turn-based / real-time / Monte Carlo scenarios |
-| `/cyber` | Cyber Operations | ATT&CK techniques, infrastructure graph, attack planner |
+| `/cyber` | Cyber Operations | ATT&CK techniques, infrastructure graph, attack planner, STIX/TAXII indicators |
 | `/cbrn` | CBRN | Agent catalog, release planner, dispersion results |
 | `/asym` | Asymmetric/Insurgency | Cell network, IED threats, COIN planning |
 | `/terror` | Terror Response | Site vulnerability, threat scenarios, response plans |
-| `/intel` | Intelligence | Intel feed, entity extraction, threat assessment, OSINT |
+| `/intel` | Intelligence | Intel feed, entity extraction, threat assessment, OSINT (incl. Recorded Future, Maxar, Jane's) |
 | `/civilian` | Civilian Impact | Population zones, impact assessment, refugee flows, corridors |
+| `/reporting` | Reports | Generate and manage SITREP, INTSUM, and CONOPS briefs |
 | `/admin` | Admin | AI provider config, user management |
 
 ### Frontend Dev Server (standalone)
@@ -269,6 +308,7 @@ VITE_ASYM_API_URL=http://localhost:8088/api/v1
 VITE_TERROR_API_URL=http://localhost:8089/api/v1
 VITE_INTEL_API_URL=http://localhost:8090/api/v1
 VITE_CIVILIAN_API_URL=http://localhost:8091/api/v1
+VITE_REPORTING_API_URL=http://localhost:8092/api/v1
 VITE_TILE_SERVER=http://localhost:8081
 ```
 
@@ -282,10 +322,10 @@ VITE_TILE_SERVER=http://localhost:8081
 |------|-------------|
 | `viewer` | Read-only, UNCLASS data only |
 | `analyst` | Create/edit intel items, annotate maps, run assessments |
-| `planner` | Create/edit scenarios, configure simulations |
-| `commander` | Approve scenario publication, access all FOUO data |
-| `sim_operator` | Launch and control simulation runs |
-| `admin` | User management, system configuration |
+| `planner` | Create/edit scenarios, configure simulations, **request map control** |
+| `commander` | Approve scenario publication, access all FOUO data, **request map control** |
+| `sim_operator` | Launch and control simulation runs, **request map control** |
+| `admin` | User management, system configuration, **request map control** |
 | `classification_officer` | Manage classification labels on records |
 
 ### Classification Levels
@@ -336,12 +376,12 @@ make sbom            # Generate SBOM (Syft → sbom.json)
 
 ## Phase 4 Roadmap
 
-The following items are planned for Phase 4 (Enterprise):
+Phase 4 (Enterprise) is **in progress**:
 
-- [ ] Multi-user collaboration with role-based map control
-- [ ] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
-- [ ] STIX/TAXII cyber threat feed consumer
-- [ ] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
+- [x] Multi-user collaboration with role-based map control
+- [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
+- [x] STIX/TAXII cyber threat feed consumer
+- [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
 - [ ] Classification handling hardening (row-level security, labels)
 - [ ] FedRAMP documentation and controls
 - [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
@@ -367,6 +407,8 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `006_terror_schema.sql` | Terror sites, threat scenarios, response plans |
 | `007_intel_schema.sql` | Intel threat assessments, OSINT ingestion jobs |
 | `008_civilian_schema.sql` | Population zones, impact assessments, refugee flows, corridors |
+| `009_stix_schema.sql` | STIX 2.1 indicator table for TAXII feed ingestion |
+| `010_reporting_schema.sql` | SITREP / INTSUM / CONOPS report storage |
 
 ---
 

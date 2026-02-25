@@ -131,3 +131,82 @@ export interface SimulateAttackResult {
   ttd_minutes: number | null
   persistence_achieved: boolean
 }
+
+// STIX/TAXII threat intelligence
+
+export type PatternType = 'stix' | 'pcre' | 'yara' | 'sigma'
+
+export interface KillChainPhase {
+  kill_chain_name: string
+  phase_name: string
+}
+
+export interface ExternalReference {
+  source_name: string
+  url?: string
+  external_id?: string
+  description?: string
+}
+
+export interface STIXIndicator {
+  id: string
+  stix_id: string
+  stix_type: string
+  spec_version: string
+  name: string
+  description: string | null
+  pattern: string
+  pattern_type: PatternType
+  indicator_types: string[]
+  kill_chain_phases: KillChainPhase[]
+  confidence: number
+  labels: string[]
+  valid_from: string
+  valid_until: string | null
+  created: string
+  modified: string
+  created_by_ref: string | null
+  external_references: ExternalReference[]
+  taxii_collection: string | null
+  taxii_server: string | null
+  classification: string
+  scenario_id: string | null
+  ingested_at: string
+}
+
+export interface CreateSTIXIndicatorRequest {
+  stix_id?: string
+  name: string
+  description?: string
+  pattern: string
+  pattern_type?: PatternType
+  indicator_types?: string[]
+  kill_chain_phases?: KillChainPhase[]
+  confidence?: number
+  labels?: string[]
+  valid_from: string
+  valid_until?: string
+  external_references?: ExternalReference[]
+  taxii_collection?: string
+  taxii_server?: string
+  classification?: string
+  scenario_id?: string
+}
+
+export interface TAXIIIngestRequest {
+  server_url: string
+  collection_id: string
+  api_key?: string
+  max_items?: number
+  dry_run?: boolean
+}
+
+export interface TAXIIIngestResult {
+  server_url: string
+  collection_id: string
+  items_fetched: number
+  items_saved: number
+  errors: string[]
+  dry_run: boolean
+  duration_seconds: number
+}

@@ -7,6 +7,7 @@ import { asymClient } from './asymClient'
 import { terrorClient } from './terrorClient'
 import { intelClient } from './intelClient'
 import { civilianClient } from './civilianClient'
+import { reportingClient } from './reportingClient'
 import type {
   LoginRequest,
   LoginResponse,
@@ -38,6 +39,10 @@ import type {
   CreateAttackRequest,
   SimulateAttackRequest,
   SimulateAttackResult,
+  STIXIndicator,
+  CreateSTIXIndicatorRequest,
+  TAXIIIngestRequest,
+  TAXIIIngestResult,
   CBRNCategory,
   CBRNAgent,
   CBRNRelease,
@@ -88,6 +93,10 @@ import type {
   HumanitarianCorridor,
   CreateCorridorRequest,
   UpdateCorridorRequest,
+  Report,
+  GenerateReportRequest,
+  UpdateReportRequest,
+  ApproveReportRequest,
 } from './types'
 
 export const authApi = {
@@ -219,6 +228,22 @@ export const cyberApi = {
 
   simulateAttack: (attackId: string, data: SimulateAttackRequest) =>
     cyberClient.post<SimulateAttackResult>(`/cyber/attacks/${attackId}/simulate`, data).then((r) => r.data),
+
+  // STIX/TAXII threat intelligence
+  listSTIXIndicators: (params?: { scenario_id?: string; taxii_server?: string; indicator_type?: string; limit?: number; offset?: number }) =>
+    cyberClient.get<STIXIndicator[]>('/cyber/stix/indicators', { params }).then((r) => r.data),
+
+  createSTIXIndicator: (data: CreateSTIXIndicatorRequest) =>
+    cyberClient.post<STIXIndicator>('/cyber/stix/indicators', data).then((r) => r.data),
+
+  getSTIXIndicator: (indicatorId: string) =>
+    cyberClient.get<STIXIndicator>(`/cyber/stix/indicators/${indicatorId}`).then((r) => r.data),
+
+  deleteSTIXIndicator: (indicatorId: string) =>
+    cyberClient.delete(`/cyber/stix/indicators/${indicatorId}`),
+
+  taxiiIngest: (data: TAXIIIngestRequest) =>
+    cyberClient.post<TAXIIIngestResult>('/cyber/taxii/ingest', data).then((r) => r.data),
 }
 
 export const cbrnApi = {
@@ -453,4 +478,24 @@ export const civilianApi = {
     civilianClient.put<HumanitarianCorridor>(`/civilian/corridors/${corridorId}`, data).then((r) => r.data),
 
   deleteCorridor: (corridorId: string) => civilianClient.delete(`/civilian/corridors/${corridorId}`),
+}
+
+export const reportingApi = {
+  generateReport: (data: GenerateReportRequest) =>
+    reportingClient.post<Report>('/reports/generate', data).then((r) => r.data),
+
+  listReports: (params?: { scenario_id?: string; report_type?: string; status?: string; limit?: number; offset?: number }) =>
+    reportingClient.get<Report[]>('/reports', { params }).then((r) => r.data),
+
+  getReport: (reportId: string) =>
+    reportingClient.get<Report>(`/reports/${reportId}`).then((r) => r.data),
+
+  updateReport: (reportId: string, data: UpdateReportRequest) =>
+    reportingClient.put<Report>(`/reports/${reportId}`, data).then((r) => r.data),
+
+  approveReport: (reportId: string, data: ApproveReportRequest) =>
+    reportingClient.post<Report>(`/reports/${reportId}/approve`, data).then((r) => r.data),
+
+  deleteReport: (reportId: string) =>
+    reportingClient.delete(`/reports/${reportId}`),
 }

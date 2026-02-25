@@ -8,9 +8,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import attacks, infrastructure, techniques, taxii
+from app.routers import reports
 
-logger = logging.getLogger("cyber-svc")
+logger = logging.getLogger("reporting-svc")
 
 
 @asynccontextmanager
@@ -20,15 +20,18 @@ async def lifespan(application: FastAPI):
         min_size=2,
         max_size=10,
     )
-    logger.info("cyber-svc started")
+    logger.info("reporting-svc started")
     yield
     await application.state.db.close()
-    logger.info("cyber-svc stopped")
+    logger.info("reporting-svc stopped")
 
 
 app = FastAPI(
-    title="AGD Cyber Operations Service",
-    description="MITRE ATT&CK catalog, infrastructure graph, and cyber attack planning.",
+    title="AGD Reporting Service",
+    description=(
+        "Auto-report generation for SITREP, INTSUM, and CONOPS briefs. "
+        "Aggregates simulation and intelligence data into structured NATO-format reports."
+    ),
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -41,10 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(techniques.router, prefix="/api/v1")
-app.include_router(infrastructure.router, prefix="/api/v1")
-app.include_router(attacks.router, prefix="/api/v1")
-app.include_router(taxii.router, prefix="/api/v1")
+app.include_router(reports.router, prefix="/api/v1")
 
 
 @app.get("/health")
