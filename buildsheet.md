@@ -40,7 +40,7 @@
 ### 1.2 Warfare Domains
 
 | Domain | Description |
-|--------|-------------|
+| ------ | ----------- |
 | Conventional | Land, Air, Sea combined arms operations |
 | CBRN | Chemical, Biological, Radiological, Nuclear modeling |
 | Cyber | Infrastructure attack/defense, attribution |
@@ -845,7 +845,7 @@ class OllamaBackend(LLMBackend):
 ### 7.2 AI Feature Catalog
 
 | Feature | Prompt Template Key | Fallback Mode |
-|---------|--------------------|--------------| 
+|---------|--------------------|--------------|
 | Scenario generation | `scenario_builder` | Wizard UI with dropdown fields |
 | Intel summarization | `intel_summary` | Manual tagging + keyword extraction |
 | Threat assessment | `threat_assess` | Weighted scoring matrix |

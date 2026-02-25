@@ -25,6 +25,7 @@ All Phase 1 checklist items were complete when this agent session started:
 ## Session 1 — Phase 2 Start (2026-02-24)
 
 ### Goal
+
 Begin Phase 2: Functional conventional warfare simulation engine. Work from the top of the buildsheet Phase 2 checklist to the bottom.
 
 ### What I Did This Session
@@ -68,6 +69,7 @@ Begin Phase 2: Functional conventional warfare simulation engine. Work from the 
 ## Session 2 — Phase 2 Completion (2026-02-24)
 
 ### Goal
+
 Complete the remaining Phase 2 item: Logistics and attrition model.
 
 ### What I Did This Session
@@ -117,6 +119,7 @@ Phase 2 is now **complete**. All checklist items marked done in `buildsheet.md`.
 ## Session 3 — Phase 3 Start (2026-02-24)
 
 ### Goal
+
 Begin Phase 3: Domain Expansion. First item: Cyber module.
 
 ### What I Did This Session
@@ -163,7 +166,7 @@ Begin Phase 3: Domain Expansion. First item: Cyber module.
 
 Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
 
-### What's Next (Session 4 — Phase 3 continued)
+### Next Steps (Session 4 — Phase 3 continued)
 
 - [ ] CBRN dispersion modeling (HYSPLIT integration)
 - [ ] Insurgent/asymmetric module (cell structure, IED threat)
@@ -176,6 +179,7 @@ Cyber module (Phase 3, item 1) is **complete**. Moving to CBRN next.
 ## Session 4 — Phase 3 Continued: CBRN Module (2026-02-24)
 
 ### Goal
+
 Implement CBRN dispersion modeling (Phase 3, item 2): agent catalog, release planning, Gaussian plume dispersion simulation, casualty estimation, and frontend UI.
 
 ### What I Did This Session
@@ -245,6 +249,7 @@ CBRN module (Phase 3, items 2 + frontend) is **complete**. Next: Insurgent/asymm
 ## Session 5 — Phase 3 Asymmetric Module (2026-02-24)
 
 ### Goal
+
 Implement the insurgent/asymmetric module: cell structure modeling, IED threat tracking, and COIN planning.
 
 ### What I Did This Session
@@ -324,7 +329,8 @@ Insurgent/asymmetric module (Phase 3, item 3) is **complete**. Next: Terror resp
 
 ## Session 6 — Phase 3 Continued (2026-02-24)
 
-### Goal
+### Goal: Terror Response Planning Module
+
 Implement the Terror Response Planning module (Phase 3, item 4).
 
 ### What I Did This Session
@@ -402,6 +408,7 @@ Terror response planning module (Phase 3, item 4) is **complete**. Next: AI-assi
 ## Session 7 — Phase 3 Intel Items (2026-02-24)
 
 ### Goal
+
 Complete Phase 3 intelligence items: AI-assisted intel analysis, OSINT ingestion pipeline, pgvector semantic search.
 
 ### What I Did This Session
@@ -479,6 +486,7 @@ Three Phase 3 intel items are **complete**: AI-assisted intel analysis, OSINT in
 ## Session 8 — Phase 3 Completion (2026-02-24)
 
 ### Goal
+
 Complete the final Phase 3 item: Civilian impact overlays (population, refugee modeling).
 
 ### What I Did This Session
@@ -535,6 +543,7 @@ Phase 3 is now **100% complete**. All Phase 3 items are done.
 ### What's Next (Session 9 — Phase 4 start)
 
 Phase 4 — Enterprise items, starting from the top:
+
 - [ ] Multi-user collaboration with role-based map control
 - [ ] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
 - [ ] STIX/TAXII cyber threat feed consumer
@@ -553,6 +562,7 @@ Phase 4 — Enterprise items, starting from the top:
 ## Session 9 — Phase 4 Start (2026-02-24)
 
 ### Goal
+
 Begin Phase 4 (Enterprise): implement the first four items from the top of the Phase 4 buildsheet checklist.
 
 ### What I Did This Session
@@ -670,6 +680,7 @@ Begin Phase 4 (Enterprise): implement the first four items from the top of the P
 ### Stopping Point
 
 Phase 4 items 1–4 are **complete**:
+
 - ✅ Multi-user collaboration with role-based map control
 - ✅ Commercial intel feed integration (Recorded Future, Maxar, Jane's)
 - ✅ STIX/TAXII cyber threat feed consumer
@@ -691,6 +702,7 @@ Phase 4 items 1–4 are **complete**:
 ## Session 10 — Phase 4 Classification Hardening + FedRAMP (2026-02-25)
 
 ### Goal
+
 Phase 4 items 5–6: Classification handling hardening (row-level security, labels) and FedRAMP documentation.
 
 ### What I Did This Session
@@ -766,6 +778,7 @@ Phase 4 items 5–6: Classification handling hardening (row-level security, labe
 ### Stopping Point
 
 Phase 4 items 5–6 are **complete**:
+
 - ✅ Classification handling hardening (row-level security, labels)
 - ✅ FedRAMP documentation and controls
 
@@ -774,6 +787,7 @@ Phase 4 items 5–6 are **complete**:
 ## Session 11 — Phase 4 Completion (2026-02-25)
 
 ### Goal
+
 Complete all remaining Phase 4 items (except Mobile app, which is explicitly deferred).
 
 ### What I Did This Session
@@ -847,6 +861,7 @@ Complete all remaining Phase 4 items (except Mobile app, which is explicitly def
 ### Stopping Point
 
 Phase 4 is now **complete** (except Mobile app, deferred per instructions):
+
 - ✅ Multi-user collaboration with role-based map control
 - ✅ Commercial intel feed integration
 - ✅ STIX/TAXII cyber threat feed consumer
@@ -872,6 +887,7 @@ Phase 4 is now **complete** (except Mobile app, deferred per instructions):
 ## Session 12 — Sim Engine Scaffold (2026-02-25)
 
 ### Goal
+
 Start implementation of the remaining Phase 2 item by creating the C++/Rust simulation engine service with a gRPC interface.
 
 ### What I Did This Session
@@ -916,7 +932,8 @@ The Rust gRPC `sim-engine` prototype is now present and buildable in the dev sta
 
 ## Session 13 — Orchestrator gRPC Integration (2026-02-25)
 
-### Goal
+### Objective
+
 Integrate `services/sim-orchestrator/app/routers/scenarios.py` and `runs.py` to call the Rust gRPC `sim-engine`, while preserving a stable fallback to the existing stub path.
 
 ### What I Did This Session
@@ -1017,7 +1034,8 @@ Orchestrator now supports dual-path execution: gRPC-first (when enabled) with au
 
 ## Session 14 — Docs + Full E2E Smoke Closure (2026-02-25)
 
-### Goal
+### Objective
+
 Finalize docs and verify a strict end-to-end API smoke after stabilizing Postgres startup in local dev.
 
 ### What I Did This Session
