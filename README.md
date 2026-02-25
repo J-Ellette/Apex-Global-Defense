@@ -338,7 +338,7 @@ VITE_TILE_SERVER=http://localhost:8081
 | `TOP_SECRET` | 3 | Top Secret |
 | `TS_SCI` | 4 | Top Secret / Sensitive Compartmented Information |
 
-Classification is enforced at the JWT level (claims) and optionally via PostgreSQL row-level security policies.
+Classification is enforced at the JWT level (claims), at the application layer (ceiling checks on every read/write endpoint), and at the PostgreSQL row-level security layer (RLS policies on all classified tables via `agd.user_classification` session setting).
 
 ---
 
@@ -382,8 +382,8 @@ Phase 4 (Enterprise) is **in progress**:
 - [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
 - [x] STIX/TAXII cyber threat feed consumer
 - [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
-- [ ] Classification handling hardening (row-level security, labels)
-- [ ] FedRAMP documentation and controls
+- [x] Classification handling hardening (row-level security, labels)
+- [x] FedRAMP documentation and controls
 - [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
 - [ ] Mobile app (React Native, read-only, offline maps)
 - [ ] Economic warfare module
@@ -409,6 +409,7 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `008_civilian_schema.sql` | Population zones, impact assessments, refugee flows, corridors |
 | `009_stix_schema.sql` | STIX 2.1 indicator table for TAXII feed ingestion |
 | `010_reporting_schema.sql` | SITREP / INTSUM / CONOPS report storage |
+| `011_classification_hardening.sql` | RLS SELECT/INSERT/UPDATE policies for all classified tables; `agd_visible_classifications()` helper function |
 
 ---
 

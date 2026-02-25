@@ -8,7 +8,13 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.auth import get_current_user, require_permission
+from app.auth import (
+    classification_allowed_levels,
+    enforce_classification_ceiling,
+    get_current_user,
+    get_user_classification,
+    require_permission,
+)
 from app.engine.templates import generate_conops, generate_intsum, generate_sitrep
 from app.models import (
     ApproveReportRequest,
@@ -37,6 +43,7 @@ async def generate_report(
     and intelligence data.  The report is saved as a DRAFT and returned.
     """
     require_permission(user, "scenario:read")
+    enforce_classification_ceiling(user, body.classification.value)
     db = request.app.state.db
 
     scenario_name = "AGD SCENARIO"
@@ -142,9 +149,15 @@ async def list_reports(
     require_permission(user, "scenario:read")
     db = request.app.state.db
 
-    conditions = ["1=1"]
-    params: list = []
-    i = 1
+    # Application-level classification ceiling
+    user_cls = get_user_classification(user)
+    allowed = classification_allowed_levels(user_cls)
+
+    n_cls = len(allowed)
+    cls_placeholders = ", ".join(f"${j + 1}::classification_level" for j in range(n_cls))
+    conditions = [f"classification IN ({cls_placeholders})"]
+    params: list = list(allowed)
+    i = n_cls + 1
 
     if scenario_id:
         conditions.append(f"scenario_id = ${i}::uuid")
@@ -179,7 +192,9 @@ async def get_report(
     row = await db.fetchrow("SELECT * FROM reports WHERE id = $1::uuid", report_id)
     if not row:
         raise HTTPException(status_code=404, detail="Report not found")
-    return _row_to_report(row)
+    report = _row_to_report(row)
+    enforce_classification_ceiling(user, report.classification.value)
+    return report
 
 
 @router.put("/reports/{report_id}", response_model=Report)
@@ -191,6 +206,13 @@ async def update_report(
 ):
     require_permission(user, "scenario:write")
     db = request.app.state.db
+
+    # Fetch existing to check current classification
+    existing = await db.fetchrow("SELECT classification FROM reports WHERE id = $1::uuid", report_id)
+    if existing:
+        enforce_classification_ceiling(user, existing["classification"])
+    if body.classification is not None:
+        enforce_classification_ceiling(user, body.classification.value)
 
     updates = []
     params: list = []

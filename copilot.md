@@ -688,6 +688,98 @@ Phase 4 items 1–4 are **complete**:
 
 ---
 
+## Session 10 — Phase 4 Classification Hardening + FedRAMP (2026-02-25)
+
+### Goal
+Phase 4 items 5–6: Classification handling hardening (row-level security, labels) and FedRAMP documentation.
+
+### What I Did This Session
+
+#### Item 5: Classification handling hardening (row-level security, labels) ✅
+
+- [x] **`db/init/011_classification_hardening.sql`** — new migration:
+  - `agd_visible_classifications()` SQL helper function for DRY policy expressions
+  - RLS SELECT + INSERT + UPDATE + DELETE policies for: `scenarios`, `equipment`, `annotations`, `cyber_infra_nodes`, `intel_threat_assessments`, `reports`
+  - `agd_app` role created with `NOBYPASSRLS` to ensure policies fire for the application DB user
+
+- [x] **All 8 Python service `app/auth.py` files updated** with new classification helpers:
+  - `get_user_classification(user: dict) -> str` — extracts clearance level from JWT `cls` claim (supports int 0–4 or string)
+  - `classification_allowed_levels(user_cls: str) -> list[str]` — returns cumulative list of allowed levels for a clearance ceiling
+  - `enforce_classification_ceiling(user: dict, record_cls: str) -> None` — raises HTTP 403 if record classification exceeds user's clearance
+
+- [x] **`services/intel-svc/app/routers/intel.py`** — classification enforcement:
+  - `list_intel_items`: always filters by user's clearance ceiling (WHERE classification IN (...))
+  - `search_intel`: same classification ceiling filter applied
+  - `create_intel_item`: `enforce_classification_ceiling` before insert
+  - `get_intel_item`: `enforce_classification_ceiling` after fetch
+  - `update_intel_item`: ceiling checked on both current and requested classification
+
+- [x] **`services/reporting-svc/app/routers/reports.py`** — classification enforcement:
+  - `generate_report`: ceiling check on requested classification
+  - `list_reports`: classification ceiling WHERE filter
+  - `get_report`: ceiling check after fetch
+  - `update_report`: ceiling check on current + requested classification
+
+- [x] **`services/cyber-svc/app/routers/infrastructure.py`** — classification enforcement:
+  - `get_graph`: classification ceiling filter in node queries (WHERE classification::text IN (...))
+  - `create_node`: `enforce_classification_ceiling` before insert
+  - `update_node`: ceiling check on current + requested classification
+
+- [x] **`frontend/src/shared/components/ClassificationBadge.tsx`** — new inline badge component:
+  - Color-coded: UNCLASS=green, FOUO=blue, SECRET=red, TOP SECRET=orange, TS/SCI=yellow
+  - Used in place of raw text classification indicators
+
+- [x] **`frontend/src/modules/intel/IntelPage.tsx`** — added `ClassificationBadge` to each intel item card
+
+- [x] **`frontend/src/modules/reporting/ReportingPage.tsx`** — added `ClassificationBadge` to report list items and report detail header
+
+- [x] **Tests** — 6 new classification unit tests in `services/reporting-svc/tests/test_reporting.py`:
+  - `test_get_user_classification_default`
+  - `test_get_user_classification_from_int`
+  - `test_classification_allowed_levels`
+  - `test_enforce_classification_ceiling_allows_lower`
+  - `test_enforce_classification_ceiling_blocks_higher`
+  - `test_generate_report_blocked_by_classification`
+  - All 17 reporting-svc tests pass; all 27 intel-svc tests pass; all 17 cyber-svc tests pass
+
+#### Item 6: FedRAMP documentation and controls ✅
+
+- [x] **`docs/fedramp/README.md`** — FedRAMP overview:
+  - Authorization scope table (system name, impact level, deployment model)
+  - Architecture summary from security perspective
+  - System boundary diagram (in/out of boundary)
+  - Key security controls already implemented table
+  - Continuous monitoring plan
+  - Contact roles (System Owner, ISSO, AO, 3PAO)
+
+- [x] **`docs/fedramp/controls-matrix.md`** — NIST SP 800-53 Rev 5 control inventory:
+  - FedRAMP Moderate baseline coverage
+  - Control families: AC, AU, CM, IA, IR, MP, PL, RA, SA, SC, SI
+  - Status: ✅ Implemented / 🔄 In Progress / ⏳ Planned / N/A
+  - AGD implementation notes for each control
+  - POA&M summary (8 items requiring remediation before ATO)
+
+- [x] Updated `buildsheet.md` — Phase 4 items 5–6 marked ✅
+- [x] Updated `README.md` — Phase 4 checklist, classification enforcement description, DB schema table
+- [x] Updated `copilot.md` — Session 10 progress
+
+### Stopping Point
+
+Phase 4 items 5–6 are **complete**:
+- ✅ Classification handling hardening (row-level security, labels)
+- ✅ FedRAMP documentation and controls
+
+### What's Next (Session 11 — Phase 4 continued)
+
+- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
+- [ ] Mobile app (React Native, read-only, offline maps)
+- [ ] Economic warfare module
+- [ ] Information operations / disinformation tracking
+- [ ] API for external system integration (ArcGIS, Google Earth)
+- [ ] Training mode (exercise inject system, scoring)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |

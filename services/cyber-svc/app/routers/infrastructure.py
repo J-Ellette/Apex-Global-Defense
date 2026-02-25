@@ -9,7 +9,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.auth import get_current_user, require_permission
+from app.auth import (
+    classification_allowed_levels,
+    enforce_classification_ceiling,
+    get_current_user,
+    get_user_classification,
+    require_permission,
+)
 from app.models import (
     CreateInfraEdgeRequest,
     CreateInfraNodeRequest,
@@ -74,14 +80,23 @@ async def get_graph(
     require_permission(claims, "scenario:read")
     db = _db(request)
 
+    # Application-level classification ceiling
+    user_cls = get_user_classification(claims)
+    allowed = classification_allowed_levels(user_cls)
+    cls_placeholders = ", ".join(f"${i + 1}" for i in range(len(allowed)))
+
     if scenario_id:
         node_rows = await db.fetch(
-            "SELECT * FROM cyber_infra_nodes WHERE scenario_id = $1 ORDER BY created_at",
+            f"SELECT * FROM cyber_infra_nodes WHERE scenario_id = ${len(allowed) + 1} "
+            f"AND classification::text IN ({cls_placeholders}) ORDER BY created_at",
+            *allowed,
             uuid.UUID(scenario_id),
         )
     else:
         node_rows = await db.fetch(
-            "SELECT * FROM cyber_infra_nodes ORDER BY created_at"
+            f"SELECT * FROM cyber_infra_nodes "
+            f"WHERE classification::text IN ({cls_placeholders}) ORDER BY created_at",
+            *allowed,
         )
 
     node_ids = [r["id"] for r in node_rows]
@@ -111,6 +126,7 @@ async def create_node(
 ) -> InfraNode:
     """Add an infrastructure node to the graph."""
     require_permission(claims, "scenario:write")
+    enforce_classification_ceiling(claims, body.classification)
     db = _db(request)
     node_id = uuid.uuid4()
     now = datetime.utcnow()
@@ -162,6 +178,9 @@ async def update_node(
     if not row:
         raise HTTPException(status_code=404, detail="Node not found")
     current = _row_to_node(dict(row))
+    enforce_classification_ceiling(claims, current.classification)
+    if body.classification is not None:
+        enforce_classification_ceiling(claims, body.classification)
 
     updated = InfraNode(
         id=current.id,

@@ -240,3 +240,75 @@ def test_generate_conops():
     assert resp.status_code == 201
     data = resp.json()
     assert data["report_type"] == "CONOPS"
+
+
+# ---------------------------------------------------------------------------
+# Classification helpers unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_user_classification_default():
+    from app.auth import get_user_classification
+
+    user = {"uid": "x", "perms": []}
+    assert get_user_classification(user) == "UNCLASS"
+
+
+def test_get_user_classification_from_int():
+    from app.auth import get_user_classification
+
+    assert get_user_classification({"cls": 0}) == "UNCLASS"
+    assert get_user_classification({"cls": 1}) == "FOUO"
+    assert get_user_classification({"cls": 2}) == "SECRET"
+    assert get_user_classification({"cls": 3}) == "TOP_SECRET"
+    assert get_user_classification({"cls": 4}) == "TS_SCI"
+
+
+def test_classification_allowed_levels():
+    from app.auth import classification_allowed_levels
+
+    assert classification_allowed_levels("UNCLASS") == ["UNCLASS"]
+    assert classification_allowed_levels("SECRET") == ["UNCLASS", "FOUO", "SECRET"]
+    assert "TS_SCI" in classification_allowed_levels("TS_SCI")
+
+
+def test_enforce_classification_ceiling_allows_lower():
+    from app.auth import enforce_classification_ceiling
+
+    user = {"cls": 2}  # SECRET
+    # Should not raise — SECRET user can see SECRET and below
+    enforce_classification_ceiling(user, "UNCLASS")
+    enforce_classification_ceiling(user, "FOUO")
+    enforce_classification_ceiling(user, "SECRET")
+
+
+def test_enforce_classification_ceiling_blocks_higher():
+    from app.auth import enforce_classification_ceiling
+    from fastapi import HTTPException
+
+    user = {"cls": 1}  # FOUO
+    import pytest
+    with pytest.raises(HTTPException) as exc_info:
+        enforce_classification_ceiling(user, "SECRET")
+    assert exc_info.value.status_code == 403
+
+
+def test_generate_report_blocked_by_classification():
+    """FOUO user (cls=1) cannot generate a SECRET report."""
+    app.dependency_overrides[get_current_user] = lambda: {
+        "uid": str(uuid4()),
+        "roles": ["analyst"],
+        "perms": ["scenario:read", "scenario:write"],
+        "org_id": str(uuid4()),
+        "cls": 1,  # FOUO ceiling
+    }
+    try:
+        from fastapi.testclient import TestClient
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/v1/reports/generate",
+                json={"report_type": "SITREP", "classification": "SECRET"},
+            )
+        assert resp.status_code == 403
+    finally:
+        app.dependency_overrides[get_current_user] = lambda: FAKE_CLAIMS

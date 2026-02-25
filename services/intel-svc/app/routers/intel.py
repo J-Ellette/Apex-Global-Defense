@@ -7,7 +7,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.auth import get_current_user, require_permission
+from app.auth import (
+    classification_allowed_levels,
+    enforce_classification_ceiling,
+    get_current_user,
+    get_user_classification,
+    require_permission,
+)
 from app.engine.extractor import extract_entities
 from app.models import (
     ClassificationLevel,
@@ -88,15 +94,28 @@ async def list_intel_items(
     require_permission(user, "scenario:read")
     db = request.app.state.db
 
+    # Application-level classification ceiling: only return records the user is cleared for
+    user_cls = get_user_classification(user)
+    allowed = classification_allowed_levels(user_cls)
+
     clauses: list[str] = []
     params: list = []
     p = 1
+
+    # Always restrict to user's clearance ceiling (defense-in-depth alongside DB RLS)
+    placeholders = ", ".join(f"${p + i}::classification_level" for i in range(len(allowed)))
+    clauses.append(f"classification IN ({placeholders})")
+    params.extend(allowed)
+    p += len(allowed)
 
     if source_type:
         clauses.append(f"source_type = ${p}::source_type")
         params.append(source_type.value)
         p += 1
     if classification:
+        # Requested filter must be within user's allowed levels
+        if classification.value not in allowed:
+            return []
         clauses.append(f"classification = ${p}::classification_level")
         params.append(classification.value)
         p += 1
@@ -130,6 +149,7 @@ async def create_intel_item(
 ):
     """Ingest a new intelligence item. Optionally runs entity extraction."""
     require_permission(user, "scenario:write")
+    enforce_classification_ceiling(user, body.classification.value)
     db = request.app.state.db
 
     entities_json: list[dict] = []
@@ -200,7 +220,9 @@ async def get_intel_item(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Intel item not found")
-    return _row_to_item(dict(row))
+    item = _row_to_item(dict(row))
+    enforce_classification_ceiling(user, item.classification.value)
+    return item
 
 
 @router.put("/intel/{item_id}", response_model=IntelItem)
@@ -213,9 +235,12 @@ async def update_intel_item(
     require_permission(user, "scenario:write")
     db = request.app.state.db
 
-    existing = await db.fetchrow("SELECT id FROM intel_items WHERE id = $1", item_id)
+    existing = await db.fetchrow("SELECT id, classification FROM intel_items WHERE id = $1", item_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="Intel item not found")
+    enforce_classification_ceiling(user, existing["classification"])
+    if body.classification is not None:
+        enforce_classification_ceiling(user, body.classification.value)
 
     updates: list[str] = []
     params: list = []
@@ -289,9 +314,19 @@ async def search_intel(
     require_permission(user, "scenario:read")
     db = request.app.state.db
 
+    # Application-level classification ceiling enforcement
+    user_cls = get_user_classification(user)
+    allowed = classification_allowed_levels(user_cls)
+
     clauses: list[str] = []
     params: list = []
     p = 1
+
+    # Always restrict to user's clearance ceiling
+    cls_placeholders = ", ".join(f"${p + i}::classification_level" for i in range(len(allowed)))
+    clauses.append(f"classification IN ({cls_placeholders})")
+    params.extend(allowed)
+    p += len(allowed)
 
     if body.q:
         clauses.append(
@@ -307,9 +342,11 @@ async def search_intel(
         p += len(body.source_types)
 
     if body.classification:
-        clauses.append(f"classification = ${p}::classification_level")
-        params.append(body.classification.value)
-        p += 1
+        # Only apply if requested classification is within user's allowed levels
+        if body.classification.value in allowed:
+            clauses.append(f"classification = ${p}::classification_level")
+            params.append(body.classification.value)
+            p += 1
 
     if body.lat is not None and body.lon is not None and body.radius_km:
         clauses.append(
