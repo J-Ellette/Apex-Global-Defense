@@ -273,6 +273,20 @@ reportingSvc:
       cpu: 500m
       memory: 256Mi
 
+econSvc:
+  image:
+    repository: agd/econ-svc
+    tag: ""
+  replicaCount: 1
+  port: 8093
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
 frontend:
   image:
     repository: agd/frontend

@@ -68,6 +68,8 @@ spec:
               value: "/api/civilian/v1"
             - name: VITE_REPORTING_API_URL
               value: "/api/reporting/v1"
+            - name: VITE_ECON_API_URL
+              value: "/api/econ/v1"
             - name: VITE_TILE_SERVER
               value: "/tiles"
             - name: VITE_WS_URL

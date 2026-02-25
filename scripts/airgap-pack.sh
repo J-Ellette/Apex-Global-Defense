@@ -33,6 +33,7 @@ declare -A IMAGES=(
   ["agd/intel-svc:${AGD_TAG}"]="intel-svc-${AGD_TAG}.tar"
   ["agd/civilian-svc:${AGD_TAG}"]="civilian-svc-${AGD_TAG}.tar"
   ["agd/reporting-svc:${AGD_TAG}"]="reporting-svc-${AGD_TAG}.tar"
+  ["agd/econ-svc:${AGD_TAG}"]="econ-svc-${AGD_TAG}.tar"
   ["agd/frontend:${AGD_TAG}"]="frontend-${AGD_TAG}.tar"
 )
 
@@ -51,11 +52,11 @@ command -v helm   >/dev/null 2>&1 || die "helm is required"
 log "Building AGD application images (tag: ${AGD_TAG})"
 docker compose -f "${REPO_ROOT}/docker-compose.dev.yml" build \
   auth-svc oob-svc sim-orchestrator collab-svc \
-  cyber-svc cbrn-svc asym-svc terror-svc intel-svc civilian-svc reporting-svc frontend
+  cyber-svc cbrn-svc asym-svc terror-svc intel-svc civilian-svc reporting-svc econ-svc frontend
 
 # Re-tag with AGD_TAG
 for svc in auth-svc oob-svc sim-orchestrator collab-svc \
-           cyber-svc cbrn-svc asym-svc terror-svc intel-svc civilian-svc reporting-svc frontend; do
+           cyber-svc cbrn-svc asym-svc terror-svc intel-svc civilian-svc reporting-svc econ-svc frontend; do
   docker tag "${svc}" "agd/${svc}:${AGD_TAG}" 2>/dev/null || true
 done
 
