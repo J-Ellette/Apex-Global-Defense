@@ -30,52 +30,46 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 
 ## Priority B — CI/CD and Build Hygiene (Merged from OpenAI + Claude)
 
-- Fix stale service matrices in `.github/workflows/ci.yml` and `Makefile` so only real services are tested/linted/formatted, and all implemented services are included.
-- Add `docker-compose.test.yml` (or equivalent integration test harness) so integration jobs run reliably.
-- Expand image publishing from single-service to matrix-based multi-service builds.
-- Add a repo guard check that fails CI when service lists in CI/Makefile drift from `services/` directory reality.
-- Ensure Python test matrix excludes non-existent `ai-svc` until implemented.
+- ✅ Fix stale service matrices in `.github/workflows/ci.yml` and `Makefile` so only real services are tested/linted/formatted, and all implemented services are included.
+- ✅ Add `docker-compose.test.yml` (or equivalent integration test harness) so integration jobs run reliably.
+- ✅ Expand image publishing from single-service to matrix-based multi-service builds.
+- ✅ Add a repo guard check that fails CI when service lists in CI/Makefile drift from `services/` directory reality.
+- ✅ Ensure Python test matrix excludes non-existent `ai-svc` until implemented.
 
 ## Priority C — Runtime Reliability and Data Controls
 
-- Make orchestrator fallback policy explicit by environment:
-  - dev: allow stub fallback,
-  - production: fail closed on engine unavailability unless explicitly overridden.
-- Add health reporting that surfaces engine mode (`grpc` vs `fallback`) and degraded state.
+- ✅ Make orchestrator fallback policy explicit by environment (dev: allow stub fallback, production: fail closed).
+- ✅ Add health reporting that surfaces engine mode (`grpc` vs `fallback`) and degraded state.
+- ✅ Add migration smoke validation for all schema init/migration paths (`scripts/db-migrate-smoke.sh` + CI job).
 - Keep DB dev-fallback behavior explicit and separate from production expectations (TimescaleDB/pgvector availability).
-- Add migration smoke validation for all schema init/migration paths to prevent partial schema drift.
 - Add retention/partitioning + archival policy for `sim_events` and `audit_log`.
 
 ## Priority D — Security and Compliance Hardening
 
-- Replace inline secrets in dev compose with environment-variable driven placeholders and committed `.env.example` templates (root and frontend).
-- Add CI secret scanning and policy checks.
+- ✅ Replace inline secrets in dev compose with environment-variable driven placeholders and committed `.env.example` templates (root and frontend).
+- ✅ Add CI secret scanning and policy checks (gitleaks).
+- ✅ Add artifact provenance/signing and release attestation for deployable images (`actions/attest-build-provenance`).
 - Standardize request-scoped classification context setting and test RLS visibility behavior by classification tier.
-- Add artifact provenance/signing and release attestation for deployable images.
 
 ## Priority E — Architecture and Contract Governance
 
+- ✅ Create shared internal Python package for duplicated auth/classification/error logic across services (`services/agd-shared/`).
 - Establish SemVer policy for REST/gRPC contracts and compatibility windows.
 - Add protobuf/schema compatibility checks in CI.
 - Define canonical event schema governance for `sim.events` (producer/consumer validation).
-- Create shared internal Python package for duplicated auth/classification/error logic across services.
 
 ## Priority F — Observability and Operational Readiness
 
+- ✅ Add incident runbooks for top failure classes (`docs/runbooks/`).
 - Standardize OpenTelemetry traces and correlation IDs across services.
 - Add dashboards for simulation latency, event throughput, queue lag, error rate, and run success/failure.
-- Add incident runbooks for top failure classes:
-  - DB init/migration issues,
-  - sim-engine gRPC outage,
-  - Kafka backpressure/unavailable,
-  - auth/JWT misconfiguration.
 
 ## Priority G — Developer Experience and Documentation
 
-- Add a root docs-status matrix that maps buildsheet checklist items to implementation files and test evidence.
-- Add one-command smoke script under `scripts/` for JWT + run + state/events verification.
-- Add service-scoped make targets for faster local iteration.
-- Keep buildsheet/README/progress docs synchronized with explicit status tags: `complete`, `prototype`, `deferred`, `future`.
+- ✅ Add a root docs-status matrix that maps buildsheet checklist items to implementation files and test evidence (`docs/status-matrix.md`).
+- ✅ Add one-command smoke script under `scripts/` for JWT + run + state/events verification (`scripts/smoke-test.sh`).
+- ✅ Add service-scoped make targets for faster local iteration (`svc-test`, `svc-lint`).
+- ✅ Keep buildsheet/README/progress docs synchronized with explicit status tags: `complete`, `prototype`, `deferred`, `future`.
 
 ## Suggested 4-Milestone Delivery Sequence
 

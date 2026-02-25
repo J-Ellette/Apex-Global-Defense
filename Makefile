@@ -148,6 +148,10 @@ docker-build:
 smoke-test:
 	bash scripts/smoke-test.sh
 
+## migrate-smoke: Validate DB migration scripts (numbering, non-empty, optional live run)
+migrate-smoke:
+	bash scripts/db-migrate-smoke.sh
+
 ## security-scan: Run Trivy security scan
 security-scan:
 	trivy fs --exit-code 1 --severity HIGH,CRITICAL .

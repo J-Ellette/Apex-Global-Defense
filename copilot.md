@@ -1095,3 +1095,45 @@ Work through `improvements.md` and implement actionable items from Priorities C,
 ### Stopping Point
 
 Priority C (explicit fallback + health), Priority D (secret scanning), and Priority F (runbooks) are now implemented. Remaining future items: Priority A (sim engine fidelity), Priority C (migration smoke validation), Priority E (shared Python package / SemVer), and Priority F (OpenTelemetry + dashboards).
+
+---
+
+## Session 16 — improvements.md Progress (2026-02-25)
+
+### Objective
+
+Continue working through `improvements.md`. Implement remaining actionable items from Priorities C, D, E, and G.
+
+### What I Did This Session
+
+- [x] **Priority C — Migration Smoke Validation**
+  - Created `scripts/db-migrate-smoke.sh` — validates all SQL files in `db/init/`:
+    - Checks files exist and are sequentially numbered (no gaps)
+    - Checks all files are non-empty
+    - Optional Docker live run against a temporary PostgreSQL container (skip with `SKIP_DOCKER=1`)
+  - Added `migrate-smoke` CI job to `.github/workflows/ci.yml` (runs `SKIP_DOCKER=1` on every push/PR)
+  - Added `migrate-smoke` Makefile target
+
+- [x] **Priority D — Artifact Provenance/Signing**
+  - Added `actions/attest-build-provenance@v1` step to the `build-images` CI job
+  - Added `id-token: write` and `attestations: write` permissions to the job
+  - Each pushed image now generates a GitHub-signed SLSA provenance attestation verifiable via `gh attestation verify`
+
+- [x] **Priority E — Shared Python Package**
+  - Created `services/agd-shared/` — installable Python package (`agd_shared`)
+  - `agd_shared/auth.py` — canonical JWT validation, classification enforcement, permission checking (extracted from the 12 identical per-service `app/auth.py` copies)
+  - `agd_shared/errors.py` — canonical error response factories (`not_found`, `forbidden`, `bad_request`, `internal_error`)
+  - `pyproject.toml` — package metadata and dependencies (`fastapi`, `python-jose`)
+  - `README.md` — usage guide and per-service migration instructions
+  - Services continue using their local `app/auth.py` for now; migration path is documented in `services/agd-shared/README.md`
+
+- [x] **Priority G — Docs-Status Matrix**
+  - Created `docs/status-matrix.md` — root matrix mapping every buildsheet deliverable to implementation files, tests, and status tag (`complete`/`prototype`/`deferred`/`future`)
+  - Covers all phases (1–4) plus the full improvements roadmap and DB schema inventory
+
+- [x] **README.md and copilot.md updated**
+  - Improvements roadmap table in `README.md` updated: C (migration smoke), D (artifact attestation), E (shared package), G (docs-status matrix) all marked ✅ Complete
+
+### Stopping Point
+
+Priority C (migration smoke), Priority D (artifact attestation), Priority E (shared package), and Priority G (docs-status matrix) are now implemented. Remaining future items: Priority A (sim engine fidelity program), Priority E (SemVer/protobuf compat), and Priority F (OpenTelemetry + dashboards).
