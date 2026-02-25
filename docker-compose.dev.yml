@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: agd_dev
       POSTGRES_USER: agd
-      POSTGRES_PASSWORD: devpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
     ports:
       - "5432:5432"
     volumes:
@@ -89,11 +89,11 @@ services:
     command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: adminpass
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpass}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/agd_dev
       KC_DB_USERNAME: agd
-      KC_DB_PASSWORD: devpass
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
     ports:
       - "8180:8080"
     depends_on:
@@ -107,11 +107,11 @@ services:
       context: ./services/auth-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://agd:devpass@postgres:5432/agd_dev?sslmode=disable
+      DATABASE_URL: postgres://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev?sslmode=disable
       REDIS_URL: redis://redis:6379
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: agd
-      JWT_SECRET: dev-secret-change-in-prod
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8080"
       ENV: development
     ports:
@@ -127,8 +127,8 @@ services:
       context: ./services/oob-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://agd:devpass@postgres:5432/agd_dev?sslmode=disable
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgres://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8080"
       ENV: development
     ports:
@@ -144,11 +144,11 @@ services:
       context: ./services/sim-orchestrator
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
       REDIS_URL: redis://redis:6379
       SIM_ENGINE_GRPC_ADDR: sim-engine:50051
       USE_GRPC_SIM_ENGINE: "true"
-      JWT_SECRET: dev-secret-change-in-prod
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -178,8 +178,8 @@ services:
       context: ./services/cyber-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -195,8 +195,8 @@ services:
       context: ./services/cbrn-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -212,8 +212,8 @@ services:
       context: ./services/asym-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -229,8 +229,8 @@ services:
       context: ./services/terror-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -246,8 +246,8 @@ services:
       context: ./services/intel-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -263,8 +263,8 @@ services:
       context: ./services/civilian-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -280,8 +280,8 @@ services:
       context: ./services/reporting-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -297,8 +297,8 @@ services:
       context: ./services/econ-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -314,8 +314,8 @@ services:
       context: ./services/infoops-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -331,8 +331,8 @@ services:
       context: ./services/gis-export-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -348,8 +348,8 @@ services:
       context: ./services/training-svc
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
-      JWT_SECRET: dev-secret-change-in-prod
+      DATABASE_URL: postgresql://agd:${POSTGRES_PASSWORD:-devpass}@postgres:5432/agd_dev
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8000"
       ENV: development
     ports:
@@ -366,7 +366,7 @@ services:
       dockerfile: Dockerfile
     environment:
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-secret-change-in-prod
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       PORT: "8080"
       ENV: development
     ports:

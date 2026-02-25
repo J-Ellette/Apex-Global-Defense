@@ -1,7 +1,11 @@
 .PHONY: all build test lint fmt clean dev help
 
-SERVICES := auth-svc oob-svc map-svc collab-svc notify-svc audit-svc
-PYTHON_SERVICES := sim-orchestrator intel-svc ai-svc reporting-svc cbrn-svc cyber-svc
+# Go services that exist under services/
+SERVICES := auth-svc oob-svc collab-svc
+
+# Python services that exist under services/
+PYTHON_SERVICES := sim-orchestrator cyber-svc cbrn-svc asym-svc terror-svc intel-svc \
+                   civilian-svc reporting-svc econ-svc infoops-svc gis-export-svc training-svc
 
 ## help: Show this help message
 help:
@@ -105,9 +109,44 @@ clean:
 	done
 	cd frontend && rm -rf dist node_modules
 
+## svc-test: Run tests for a single service (usage: make svc-test SVC=cyber-svc)
+svc-test:
+	@[ -n "$(SVC)" ] || (echo "ERROR: SVC is required. Example: make svc-test SVC=cyber-svc" && exit 1)
+	@if [ -f "services/$(SVC)/go.mod" ]; then \
+		cd services/$(SVC) && go test ./... -race; \
+	else \
+		cd services/$(SVC) && python -m pytest; \
+	fi
+
+## svc-lint: Lint a single service (usage: make svc-lint SVC=cyber-svc)
+svc-lint:
+	@[ -n "$(SVC)" ] || (echo "ERROR: SVC is required. Example: make svc-lint SVC=cyber-svc" && exit 1)
+	@if [ -f "services/$(SVC)/go.mod" ]; then \
+		cd services/$(SVC) && golangci-lint run ./...; \
+	else \
+		cd services/$(SVC) && ruff check .; \
+	fi
+
+## guard-services: Fail if CI service lists drift from services/ directory contents
+guard-services:
+	@echo "Checking service list consistency..."
+	@ACTUAL=$$(ls services/ | sort | tr '\n' ' ' | sed 's/ *$$//'); \
+	EXPECTED="asym-svc auth-svc cbrn-svc civilian-svc collab-svc cyber-svc econ-svc gis-export-svc infoops-svc intel-svc oob-svc reporting-svc sim-engine sim-orchestrator terror-svc training-svc"; \
+	if [ "$$ACTUAL" != "$$EXPECTED" ]; then \
+		echo "ERROR: services/ directory contents do not match expected list."; \
+		echo "  Actual:   $$ACTUAL"; \
+		echo "  Expected: $$EXPECTED"; \
+		exit 1; \
+	fi
+	@echo "OK: service list is consistent."
+
 ## docker-build: Build all Docker images
 docker-build:
 	docker buildx bake
+
+## smoke-test: Run one-command smoke test against a running dev environment
+smoke-test:
+	bash scripts/smoke-test.sh
 
 ## security-scan: Run Trivy security scan
 security-scan:
