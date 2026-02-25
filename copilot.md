@@ -1057,3 +1057,41 @@ Finalize docs and verify a strict end-to-end API smoke after stabilizing Postgre
 ### Stopping Point
 
 Docs and runtime behavior are now synchronized for the current implementation: gRPC-first orchestration is active in dev, fallback behavior remains intact, and full API smoke passes on a fresh stabilized local stack.
+
+---
+
+## Session 15 — improvements.md Progress (2026-02-25)
+
+### Objective
+
+Work through `improvements.md` and implement actionable items from Priorities C, D, and F that can be completed with minimal, surgical changes.
+
+### What I Did This Session
+
+- [x] **Priority C — Runtime Reliability: health endpoint engine mode**
+  - Updated `services/sim-orchestrator/main.py` `/health` endpoint to return `engine_mode` (`"grpc"` or `"stub"`) and `engine_addr`
+  - Operators can now see at a glance whether the orchestrator is configured for gRPC or stub engine
+
+- [x] **Priority C — Runtime Reliability: explicit fallback policy by environment**
+  - Updated `services/sim-orchestrator/app/routers/scenarios.py` `_execute_run`
+  - When `env` is not `"development"` or `"test"` (i.e., production), gRPC failure now **fails closed** — the run transitions to `error` rather than silently falling back to stub engine
+  - In `development`/`test`, stub fallback continues to be allowed (no change to dev behavior)
+  - Updated health test in `services/sim-orchestrator/tests/test_runs.py` to assert the new response shape
+
+- [x] **Priority D — Security: CI secret scanning**
+  - Added `secret-scan` job to `.github/workflows/ci.yml` using `gitleaks/gitleaks-action@v2`
+  - Scans full commit history (`fetch-depth: 0`) on every push/PR to `main` and `develop`
+
+- [x] **Priority F — Observability: incident runbooks**
+  - Created `docs/runbooks/README.md` — overview, severity definitions, general response principles
+  - Created `docs/runbooks/db-init-migration.md` — DB init/migration failure runbook
+  - Created `docs/runbooks/sim-engine-grpc-outage.md` — gRPC outage and degraded mode runbook
+  - Created `docs/runbooks/kafka-backpressure.md` — Kafka consumer lag and broker issues runbook
+  - Created `docs/runbooks/auth-jwt-misconfiguration.md` — JWT secret mismatch and auth failure runbook
+
+- [x] **README.md and copilot.md updated**
+  - Improvements roadmap table in `README.md` updated with newly completed items
+
+### Stopping Point
+
+Priority C (explicit fallback + health), Priority D (secret scanning), and Priority F (runbooks) are now implemented. Remaining future items: Priority A (sim engine fidelity), Priority C (migration smoke validation), Priority E (shared Python package / SemVer), and Priority F (OpenTelemetry + dashboards).
