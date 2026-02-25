@@ -428,12 +428,15 @@ Progress against [`improvements.md`](./improvements.md):
 | B | CI/CD — `docker-compose.test.yml` integration test harness | ✅ Complete |
 | B | CI/CD — matrix-based multi-service image publishing | ✅ Complete |
 | B | CI/CD — repo guard check (service list drift detection) | ✅ Complete |
-| C | Runtime reliability — explicit fallback policy, health reporting | ⏳ Future |
+| C | Runtime reliability — health endpoint surfaces engine mode (`grpc` vs `stub`) | ✅ Complete |
+| C | Runtime reliability — explicit fallback policy (dev: stub allowed, production: fail closed) | ✅ Complete |
+| C | Runtime reliability — DB dev-fallback explicit, migration smoke validation | ⏳ Future |
 | D | Security — `.env.example` templates (root + frontend) | ✅ Complete |
 | D | Security — env-var-driven secrets in `docker-compose.dev.yml` | ✅ Complete |
-| D | Security — CI secret scanning + policy checks | ⏳ Future |
+| D | Security — CI secret scanning (gitleaks) | ✅ Complete |
 | E | Architecture — SemVer contract governance, shared Python package | ⏳ Future |
-| F | Observability — OpenTelemetry, dashboards, runbooks | ⏳ Future |
+| F | Observability — OpenTelemetry, dashboards | ⏳ Future |
+| F | Observability — incident runbooks (DB init, gRPC outage, Kafka, JWT) | ✅ Complete |
 | G | Developer experience — service-scoped make targets (`svc-test`, `svc-lint`) | ✅ Complete |
 | G | Developer experience — one-command smoke script (`scripts/smoke-test.sh`) | ✅ Complete |
 

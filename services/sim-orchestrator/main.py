@@ -54,4 +54,9 @@ app.include_router(runs.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    engine_mode = "grpc" if settings.use_grpc_sim_engine else "stub"
+    return {
+        "status": "ok",
+        "engine_mode": engine_mode,
+        "engine_addr": settings.sim_engine_grpc_addr if settings.use_grpc_sim_engine else None,
+    }

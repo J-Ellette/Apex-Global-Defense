@@ -163,8 +163,13 @@ async def _execute_run(db, redis, run_id: uuid.UUID, scenario_id: uuid.UUID, con
                         events.append(event)
                     used_grpc_engine = True
                 except Exception as grpc_exc:  # noqa: BLE001
+                    if settings.env not in ("development", "test"):
+                        # Production: fail closed — do not silently degrade to stub engine.
+                        raise RuntimeError(
+                            f"sim-engine gRPC unavailable (stub fallback disabled in env={settings.env!r}): {grpc_exc}"
+                        ) from grpc_exc
                     logger.warning(
-                        "gRPC sim-engine failed for run %s (%s); falling back to stub engine",
+                        "gRPC sim-engine failed for run %s (%s); falling back to stub engine (dev/test only)",
                         run_id,
                         grpc_exc,
                     )

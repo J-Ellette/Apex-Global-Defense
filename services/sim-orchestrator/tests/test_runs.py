@@ -34,11 +34,13 @@ def _make_fake_db():
 # ---------------------------------------------------------------------------
 
 def test_health():
-    """Health endpoint returns 200 ok."""
+    """Health endpoint returns 200 ok with engine mode info."""
     with TestClient(app) as client:
         resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["engine_mode"] in ("grpc", "stub")
 
 
 def test_get_run_not_found():
