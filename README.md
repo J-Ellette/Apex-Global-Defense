@@ -172,9 +172,13 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 | `intel-svc` | 8090 | Python/FastAPI | ✅ Complete + commercial feeds |
 | `civilian-svc` | 8091 | Python/FastAPI | ✅ Complete |
 | `reporting-svc` | 8092 | Python/FastAPI | ✅ Complete (Phase 4) |
-| `map-svc` | — | Go | ⏳ Phase 4 |
-| `ai-svc` | — | Python | ⏳ Phase 4 |
-| `sim-engine` | — | C++/Rust | ⏳ Phase 4 |
+| `econ-svc` | 8093 | Python/FastAPI | ✅ Complete (Phase 4) |
+| `infoops-svc` | 8094 | Python/FastAPI | ✅ Complete (Phase 4) |
+| `gis-export-svc` | 8095 | Python/FastAPI | ✅ Complete (Phase 4) |
+| `training-svc` | 8096 | Python/FastAPI | ✅ Complete (Phase 4) |
+| `map-svc` | — | Go | ⏳ Future |
+| `ai-svc` | — | Python | ⏳ Future |
+| `sim-engine` | — | C++/Rust | ⏳ Future |
 
 ### Infrastructure Services (dev)
 
@@ -261,6 +265,10 @@ All REST APIs accept `Authorization: Bearer <jwt>` and return `application/json`
 | Intel | `http://localhost:8090/api/v1/intel` | `GET /intel`, `POST /intel/search`, `POST /extract`, `POST /threat-assess` |
 | Civilian | `http://localhost:8091/api/v1/civilian` | `GET /population`, `POST /impact/assess`, `GET /flows`, `GET /corridors` |
 | Reporting | `http://localhost:8092/api/v1` | `POST /reports/generate`, `GET /reports`, `GET /reports/{id}`, `POST /reports/{id}/approve` |
+| Economic Warfare | `http://localhost:8093/api/v1` | `GET /sanctions`, `GET /trade-routes`, `POST /impact/assess`, `GET /economic-indicators` |
+| Info Ops | `http://localhost:8094/api/v1` | `GET /narratives`, `POST /narratives/{id}/analyze`, `GET /campaigns`, `GET /indicators` |
+| GIS Export | `http://localhost:8095/api/v1` | `POST /export/generate`, `GET /export/layers`, `GET /integrations` |
+| Training | `http://localhost:8096/api/v1` | `GET /exercises`, `POST /exercises/{id}/start`, `POST /injects/{id}/fire`, `POST /objectives/{id}/score` |
 
 All services expose a `GET /health` endpoint for readiness checks.
 
@@ -285,7 +293,10 @@ The React frontend (`frontend/`) is a single-page application built with Vite + 
 | `/intel` | Intelligence | Intel feed, entity extraction, threat assessment, OSINT (incl. Recorded Future, Maxar, Jane's) |
 | `/civilian` | Civilian Impact | Population zones, impact assessment, refugee flows, corridors |
 | `/reporting` | Reports | Generate and manage SITREP, INTSUM, and CONOPS briefs |
-| `/admin` | Admin | AI provider config, user management |
+| `/econ` | Economic Warfare | Sanction mapping, trade disruption, economic impact assessment |
+| `/infoops` | Information Operations | Narrative threats, influence campaigns, disinformation indicators |
+| `/training` | Training Mode | Exercise management, scripted injects, trainee scoring |
+| `/admin` | Admin | AI provider config, user management, GIS integrations |
 
 ### Frontend Dev Server (standalone)
 
@@ -309,6 +320,10 @@ VITE_TERROR_API_URL=http://localhost:8089/api/v1
 VITE_INTEL_API_URL=http://localhost:8090/api/v1
 VITE_CIVILIAN_API_URL=http://localhost:8091/api/v1
 VITE_REPORTING_API_URL=http://localhost:8092/api/v1
+VITE_ECON_API_URL=http://localhost:8093/api/v1
+VITE_INFOOPS_API_URL=http://localhost:8094/api/v1
+VITE_GIS_API_URL=http://localhost:8095/api/v1
+VITE_TRAINING_API_URL=http://localhost:8096/api/v1
 VITE_TILE_SERVER=http://localhost:8081
 ```
 
@@ -376,7 +391,7 @@ make sbom            # Generate SBOM (Syft → sbom.json)
 
 ## Phase 4 Roadmap
 
-Phase 4 (Enterprise) is **in progress**:
+Phase 4 (Enterprise) is **nearly complete**:
 
 - [x] Multi-user collaboration with role-based map control
 - [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
@@ -384,12 +399,51 @@ Phase 4 (Enterprise) is **in progress**:
 - [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
 - [x] Classification handling hardening (row-level security, labels)
 - [x] FedRAMP documentation and controls
-- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
+- [x] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
 - [ ] Mobile app (React Native, read-only, offline maps)
-- [ ] Economic warfare module
-- [ ] Information operations / disinformation tracking
-- [ ] API for external system integration (ArcGIS, Google Earth)
-- [ ] Training mode (exercise inject system, scoring)
+- [x] Economic warfare module
+- [x] Information operations / disinformation tracking
+- [x] API for external system integration (ArcGIS, Google Earth)
+- [x] Training mode (exercise inject system, scoring)
+
+### Phase 4 New Features
+
+#### Air-Gap Deployment Package
+- **Helm chart** (`helm/agd/`) — full Kubernetes manifests for all 16 services + infrastructure
+- **`scripts/airgap-pack.sh`** — bundles all Docker images + Helm chart into a portable `.tar.gz`
+- **`scripts/airgap-load.sh`** — loads image bundle on air-gap target; optional private registry push
+- **`scripts/ollama-pull.sh`** — pull, save, and restore Ollama LLM models for offline AI
+- **`docs/airgap/README.md`** — comprehensive air-gap deployment guide
+
+#### Economic Warfare (`econ-svc`, port 8093)
+- Sanction target tracking (8 sanction types, ACTIVE/SUSPENDED/LIFTED/PROPOSED status)
+- Trade route disruption modeling (origin→destination, commodity, dependency level)
+- Economic indicators database (GDP, inflation, unemployment per country/year)
+- Deterministic economic impact assessment engine (GDP impact, inflation change, currency devaluation, trade volume reduction, severity rating)
+- 5-nation seed data: Russia, Iran, North Korea, Belarus, Venezuela
+
+#### Information Operations (`infoops-svc`, port 8094)
+- Narrative threat tracking (spread velocity, reach estimate, platform coverage, key claims)
+- Influence campaign catalog (attributed actor, sponsoring state, attribution confidence)
+- Disinformation indicator catalog (8 indicator types: bot networks, deepfakes, astroturfing, etc.)
+- Attribution assessment engine (evidence-based attribution scoring)
+- Deterministic narrative analysis (spread score, virality index, counter-effectiveness, recommended actions)
+- Seed data: Russia/China influence operations with real campaign analogs
+
+#### GIS Export & External Integration (`gis-export-svc`, port 8095)
+- GeoJSON and KML export for all geospatial layers (units, CBRN, intel, civilian, terror, etc.)
+- ArcGIS Online and Google Earth Network Link integration configs
+- External system integration catalog (WMS/WFS/ArcGIS/Google Earth/generic REST)
+- Admin panel integration management (add, test, delete integrations)
+- Export quick-links in Admin panel
+
+#### Training Mode (`training-svc`, port 8096)
+- Exercise management with full lifecycle (DRAFT → SCHEDULED → ACTIVE → COMPLETED)
+- Scripted inject system: 12 inject types (unit movement, CBRN alerts, cyber attacks, etc.)
+- Three trigger modes: time-based, event-based, manual
+- Objective tracking with type (DECISION, REPORT, ACTION, COMMUNICATION, ASSESSMENT)
+- Deterministic scoring engine: weighted objectives, grade calculation (A–F), timeliness/accuracy/communication sub-scores
+- Seed data: entry exercise and CBRN drill with injects and scored objectives
 
 ---
 
@@ -410,6 +464,10 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `009_stix_schema.sql` | STIX 2.1 indicator table for TAXII feed ingestion |
 | `010_reporting_schema.sql` | SITREP / INTSUM / CONOPS report storage |
 | `011_classification_hardening.sql` | RLS SELECT/INSERT/UPDATE policies for all classified tables; `agd_visible_classifications()` helper function |
+| `012_econ_schema.sql` | Economic sanction targets, trade routes, impact assessments, economic indicators |
+| `013_infoops_schema.sql` | Narrative threats, influence campaigns, disinformation indicators, attribution assessments |
+| `014_gis_export_schema.sql` | GIS integration configuration (ArcGIS, Google Earth, WMS/WFS) |
+| `015_training_schema.sql` | Training exercises, scripted injects, objectives with scoring |
 
 ---
 

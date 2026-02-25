@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oob-svc
+  namespace: {{ include "agd.namespace" . }}
+  labels:
+    {{- include "agd.labels" . | nindent 4 }}
+    app.kubernetes.io/name: oob-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.oobSvc.port }}
+      targetPort: {{ .Values.oobSvc.port }}
+      name: http
+  selector:
+    app.kubernetes.io/name: oob-svc
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oob-svc
+  namespace: {{ include "agd.namespace" . }}
+  labels:
+    {{- include "agd.labels" . | nindent 4 }}
+    app.kubernetes.io/name: oob-svc
+spec:
+  replicas: {{ .Values.oobSvc.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oob-svc
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oob-svc
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: oob-svc
+          image: {{ include "agd.image" (dict "img" .Values.oobSvc.image "context" .) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.oobSvc.port }}
+          env:
+            - name: PORT
+              value: {{ .Values.oobSvc.port | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: agd-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: agd-secrets
+                  key: jwt-secret
+            - name: DATABASE_URL
+              value: "postgresql://{{ .Values.postgres.username }}:$(DB_PASSWORD)@postgres:5432/{{ .Values.postgres.database }}"
+          envFrom:
+            - configMapRef:
+                name: agd-config
+          resources:
+            {{- toYaml .Values.oobSvc.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.oobSvc.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.oobSvc.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10

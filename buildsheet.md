@@ -1623,12 +1623,12 @@ class ExerciseScorer:
 - [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
 - [x] Classification handling hardening (row-level security, labels)
 - [x] FedRAMP documentation and controls
-- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
+- [x] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
 - [ ] Mobile app (React Native, read-only, offline maps)
-- [ ] Economic warfare module
-- [ ] Information operations / disinformation tracking
-- [ ] API for external system integration (ArcGIS, Google Earth)
-- [ ] Training mode (exercise inject system, scoring)
+- [x] Economic warfare module
+- [x] Information operations / disinformation tracking
+- [x] API for external system integration (ArcGIS, Google Earth)
+- [x] Training mode (exercise inject system, scoring)
 
 ---
 

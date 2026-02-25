@@ -105,6 +105,24 @@ const MODULE_CARDS = [
     description: 'Auto-generate SITREP, INTSUM, and CONOPS briefs from simulation and intelligence data.',
   },
   {
+    href: '/econ',
+    icon: '💰',
+    title: 'Economic Warfare',
+    description: 'Sanction mapping, trade disruption modeling, and economic impact assessment.',
+  },
+  {
+    href: '/infoops',
+    icon: '📡',
+    title: 'Information Operations',
+    description: 'Track influence campaigns, disinformation indicators, and narrative threats.',
+  },
+  {
+    href: '/training',
+    icon: '🎓',
+    title: 'Training Mode',
+    description: 'Exercise management, scripted inject system, and trainee performance scoring.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',

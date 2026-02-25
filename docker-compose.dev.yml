@@ -278,6 +278,74 @@ services:
       auth-svc:
         condition: service_started
 
+  econ-svc:
+    build:
+      context: ./services/econ-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
+      JWT_SECRET: dev-secret-change-in-prod
+      PORT: "8000"
+      ENV: development
+    ports:
+      - "8093:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+
+  infoops-svc:
+    build:
+      context: ./services/infoops-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
+      JWT_SECRET: dev-secret-change-in-prod
+      PORT: "8000"
+      ENV: development
+    ports:
+      - "8094:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+
+  gis-export-svc:
+    build:
+      context: ./services/gis-export-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
+      JWT_SECRET: dev-secret-change-in-prod
+      PORT: "8000"
+      ENV: development
+    ports:
+      - "8095:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+
+  training-svc:
+    build:
+      context: ./services/training-svc
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
+      JWT_SECRET: dev-secret-change-in-prod
+      PORT: "8000"
+      ENV: development
+    ports:
+      - "8096:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+
   collab-svc:
     build:
       context: ./services/collab-svc
@@ -310,6 +378,10 @@ services:
       VITE_INTEL_API_URL: http://localhost:8090/api/v1
       VITE_CIVILIAN_API_URL: http://localhost:8091/api/v1
       VITE_REPORTING_API_URL: http://localhost:8092/api/v1
+      VITE_ECON_API_URL: http://localhost:8093/api/v1
+      VITE_INFOOPS_API_URL: http://localhost:8094/api/v1
+      VITE_GIS_API_URL: http://localhost:8095/api/v1
+      VITE_TRAINING_API_URL: http://localhost:8096/api/v1
       VITE_TILE_SERVER: http://localhost:8081
       VITE_WS_URL: ws://localhost:8084
       VITE_AIRGAP: "false"

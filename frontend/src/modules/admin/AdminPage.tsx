@@ -1,14 +1,26 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuthStore } from '../../app/providers/AuthProvider'
 import { ClassificationBanner } from '../../shared/components/ClassificationBanner'
+import { gisClient } from '../../shared/api/gisClient'
+import type {
+  CreateIntegrationConfigRequest,
+  IntegrationConfig,
+  IntegrationType,
+  LayerType,
+} from '../../shared/api/types/gis'
 import { useAIConfigStore } from './hooks/useAIConfigStore'
 
-type Tab = 'ai-config'
+type Tab = 'ai-config' | 'gis-integrations'
+
+const ALL_LAYERS: LayerType[] = [
+  'UNITS', 'INTEL_ITEMS', 'CBRN_RELEASES', 'CIVILIAN_ZONES',
+  'SANCTION_TARGETS', 'TRADE_ROUTES', 'NARRATIVE_THREATS', 'TERROR_SITES', 'ASYM_CELLS',
+]
 
 export default function AdminPage() {
   const classification = useAuthStore((s) => s.user?.classification ?? 'UNCLASS')
   const isAdmin = useAuthStore((s) => s.hasRole('admin'))
-  const [activeTab] = useState<Tab>('ai-config')
+  const [activeTab, setActiveTab] = useState<Tab>('ai-config')
 
   if (!isAdmin) {
     return (
@@ -30,10 +42,28 @@ export default function AdminPage() {
         <div className="px-6 py-4 border-b border-gray-800">
           <h1 className="text-xl font-bold text-white">Administration</h1>
           <p className="text-sm text-gray-400 mt-0.5">System configuration and management</p>
+          <div className="flex gap-2 mt-3">
+            {([['ai-config', 'AI Configuration'], ['gis-integrations', 'GIS Integrations']] as [Tab, string][]).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={[
+                  'px-3 py-1.5 rounded text-sm font-medium transition-colors',
+                  activeTab === tab
+                    ? 'bg-sky-700 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 max-w-3xl">
+        <div className="flex-1 overflow-y-auto p-6 max-w-4xl">
           {activeTab === 'ai-config' && <AIConfigPanel />}
+          {activeTab === 'gis-integrations' && <GISIntegrationsPanel />}
         </div>
       </main>
 
@@ -288,6 +318,244 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         ].join(' ')}
       />
     </button>
+  )
+}
+
+// ── GIS Integrations Panel ───────────────────────────────────────────────────
+
+const INTEGRATION_TYPES: IntegrationType[] = ['ARCGIS', 'GOOGLE_EARTH', 'WMS', 'WFS', 'GENERIC_REST']
+
+function GISIntegrationsPanel() {
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [testResults, setTestResults] = useState<Record<string, string>>({})
+
+  const [form, setForm] = useState<CreateIntegrationConfigRequest>({
+    name: '',
+    integration_type: 'ARCGIS',
+    config: {},
+    is_active: true,
+    classification: 'UNCLASS',
+  })
+  const [configJson, setConfigJson] = useState('{}')
+  const [jsonError, setJsonError] = useState('')
+
+  useEffect(() => {
+    gisClient.get<IntegrationConfig[]>('/integrations')
+      .then((r) => setIntegrations(r.data))
+      .catch(() => setIntegrations([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    let parsed: Record<string, unknown> = {}
+    try {
+      parsed = JSON.parse(configJson)
+      setJsonError('')
+    } catch {
+      setJsonError('Invalid JSON in config field')
+      return
+    }
+    try {
+      const res = await gisClient.post<IntegrationConfig>('/integrations', { ...form, config: parsed })
+      setIntegrations((prev) => [res.data, ...prev])
+      setShowModal(false)
+      setForm({ name: '', integration_type: 'ARCGIS', config: {}, is_active: true, classification: 'UNCLASS' })
+      setConfigJson('{}')
+    } catch {
+      // silently fail – real impl would show error
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await gisClient.delete(`/integrations/${id}`)
+      setIntegrations((prev) => prev.filter((i) => i.id !== id))
+    } catch {
+      // silently fail
+    }
+  }
+
+  async function handleTest(id: string) {
+    setTestResults((prev) => ({ ...prev, [id]: 'testing…' }))
+    try {
+      const res = await gisClient.post<{ status: string; message: string }>(`/integrations/${id}/test`)
+      setTestResults((prev) => ({ ...prev, [id]: res.data.message }))
+    } catch {
+      setTestResults((prev) => ({ ...prev, [id]: 'Test failed' }))
+    }
+  }
+
+  function downloadExport(layer: LayerType, format: 'GEOJSON' | 'KML') {
+    gisClient.post(
+      '/export/generate',
+      { layer_type: layer, format, classification: 'UNCLASS' },
+      { responseType: 'blob' },
+    ).then((res) => {
+      const ext = format === 'KML' ? 'kml' : 'geojson'
+      const url = URL.createObjectURL(res.data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${layer.toLowerCase()}.${ext}`
+      a.click()
+      URL.revokeObjectURL(url)
+    }).catch(() => {})
+  }
+
+  return (
+    <section className="space-y-8">
+      {/* Integrations table */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-white">Configured Integrations</h2>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
+          >
+            + Add Integration
+          </button>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : integrations.length === 0 ? (
+          <p className="text-sm text-gray-500">No integrations configured.</p>
+        ) : (
+          <div className="rounded border border-gray-700 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-800 text-gray-300">
+                  <th className="text-left px-3 py-2">Name</th>
+                  <th className="text-left px-3 py-2">Type</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                  <th className="text-left px-3 py-2">Classification</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {integrations.map((intg) => (
+                  <tr key={intg.id} className="border-t border-gray-700 hover:bg-gray-800/50">
+                    <td className="px-3 py-2 text-white">{intg.name}</td>
+                    <td className="px-3 py-2 text-gray-300">{intg.integration_type}</td>
+                    <td className="px-3 py-2">
+                      <span className={intg.is_active ? 'text-green-400' : 'text-gray-500'}>
+                        {intg.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-400">{intg.classification}</td>
+                    <td className="px-3 py-2 flex gap-2 justify-end">
+                      {testResults[intg.id] && (
+                        <span className="text-xs text-sky-400 mr-2">{testResults[intg.id]}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleTest(intg.id)}
+                        className="rounded border border-sky-700 px-2 py-0.5 text-xs text-sky-400 hover:bg-sky-900/30"
+                      >
+                        Test
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(intg.id)}
+                        className="rounded border border-red-800 px-2 py-0.5 text-xs text-red-400 hover:bg-red-900/30"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Export quick-links */}
+      <div>
+        <h2 className="text-base font-semibold text-white mb-3">Export Quick-Links</h2>
+        <p className="text-sm text-gray-400 mb-4">Download any layer as GeoJSON or KML for use in ArcGIS or Google Earth.</p>
+        <div className="space-y-2">
+          {ALL_LAYERS.map((layer) => (
+            <div key={layer} className="flex items-center gap-3">
+              <span className="text-sm text-gray-300 w-40">{layer.replace(/_/g, ' ')}</span>
+              <button
+                type="button"
+                onClick={() => downloadExport(layer, 'GEOJSON')}
+                className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 hover:bg-gray-700"
+              >
+                GeoJSON
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadExport(layer, 'KML')}
+                className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 hover:bg-gray-700"
+              >
+                KML
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add integration modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-base font-semibold text-white mb-4">Add Integration</h3>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <Field label="Name">
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="My ArcGIS Layer"
+                  className={INPUT}
+                />
+              </Field>
+              <Field label="Type">
+                <select
+                  value={form.integration_type}
+                  onChange={(e) => setForm({ ...form, integration_type: e.target.value as IntegrationType })}
+                  className={INPUT}
+                >
+                  {INTEGRATION_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Config (JSON)">
+                <textarea
+                  rows={5}
+                  value={configJson}
+                  onChange={(e) => setConfigJson(e.target.value)}
+                  className={INPUT + ' font-mono resize-none'}
+                  spellCheck={false}
+                />
+                {jsonError && <p className="text-xs text-red-400 mt-1">{jsonError}</p>}
+              </Field>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="rounded border border-gray-600 px-4 py-1.5 text-sm text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 
