@@ -117,6 +117,12 @@ const MODULE_CARDS = [
     description: 'Track influence campaigns, disinformation indicators, and narrative threats.',
   },
   {
+    href: '/training',
+    icon: '🎓',
+    title: 'Training Mode',
+    description: 'Exercise management, scripted inject system, and trainee performance scoring.',
+  },
+  {
     href: '/admin',
     icon: '⚙️',
     title: 'Administration',
