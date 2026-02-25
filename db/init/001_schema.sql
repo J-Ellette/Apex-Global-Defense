@@ -6,8 +6,19 @@
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
-CREATE EXTENSION IF NOT EXISTS vector;  -- pgvector for semantic search
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'timescaledb extension unavailable; continuing with standard PostgreSQL tables';
+END $$;
+
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'pgvector extension unavailable; falling back to JSONB embedding column';
+END $$;
 
 -- =============================================================================
 -- Enums
@@ -194,7 +205,18 @@ CREATE TABLE sim_events (
     payload         JSONB,
     turn_number     INTEGER
 );
-SELECT create_hypertable('sim_events', 'time');
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM pg_proc
+        WHERE proname = 'create_hypertable'
+    ) THEN
+        PERFORM create_hypertable('sim_events', 'time', if_not_exists => TRUE);
+    END IF;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'create_hypertable failed; using regular table for sim_events';
+END $$;
 CREATE INDEX idx_sim_events_run ON sim_events(run_id, time DESC);
 
 -- =============================================================================
@@ -218,13 +240,12 @@ CREATE TABLE intel_items (
     published_at    TIMESTAMPTZ,
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ingested_by     UUID REFERENCES users(id),
-    embedding       VECTOR(1536)   -- pgvector for semantic search
+    embedding       JSONB          -- pgvector fallback: store embedding as JSON array when extension is unavailable
 );
 CREATE INDEX idx_intel_location  ON intel_items USING GIST(location);
 CREATE INDEX idx_intel_source    ON intel_items(source_type);
 CREATE INDEX idx_intel_tags      ON intel_items USING GIN(tags);
 CREATE INDEX idx_intel_published ON intel_items(published_at DESC);
-CREATE INDEX idx_intel_embedding ON intel_items USING ivfflat(embedding vector_cosine_ops) WITH (lists = 100);
 
 -- =============================================================================
 -- Map Annotations

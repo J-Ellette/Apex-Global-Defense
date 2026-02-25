@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package agd.sim;
+
+message GeoPoint {
+  double lat = 1;
+  double lng = 2;
+}
+
+message ScenarioConfig {
+  string mode = 1;
+  repeated string blue_force_ids = 2;
+  repeated string red_force_ids = 3;
+  string theater_bounds_json = 4;
+  string start_time_iso = 5;
+  int32 duration_hours = 6;
+  int32 monte_carlo_runs = 7;
+  string weather_preset = 8;
+  bool fog_of_war = 9;
+  bool terrain_effects = 10;
+}
+
+message SimRequest {
+  string run_id = 1;
+  ScenarioConfig config = 2;
+  bytes initial_state = 3;
+}
+
+enum EventType {
+  UNIT_MOVE = 0;
+  ENGAGEMENT = 1;
+  CASUALTY = 2;
+  SUPPLY_CONSUMED = 3;
+  OBJECTIVE_CAPTURED = 4;
+  AIRSTRIKE = 5;
+  NAVAL_ACTION = 6;
+  CYBER_ATTACK = 7;
+  CBRN_RELEASE = 8;
+  PHASE_CHANGE = 9;
+  RESUPPLY = 10;
+}
+
+message SimEvent {
+  string run_id = 1;
+  int64 timestamp_ms = 2;
+  int32 turn_number = 3;
+  EventType type = 4;
+  string entity_id = 5;
+  GeoPoint location = 6;
+  bytes payload = 7;
+}
+
+message RunRef {
+  string run_id = 1;
+}
+
+message RunStatus {
+  string run_id = 1;
+  string status = 2;
+  double progress = 3;
+  string message = 4;
+}
+
+message SimState {
+  string run_id = 1;
+  string status = 2;
+  double progress = 3;
+  int32 turn_number = 4;
+  int64 sim_time_ms = 5;
+  int32 blue_unit_count = 6;
+  int32 red_unit_count = 7;
+  string objectives_status_json = 8;
+}
+
+message EventInjection {
+  string run_id = 1;
+  string event_type = 2;
+  bytes payload = 3;
+}
+
+message Ack {
+  bool ok = 1;
+  string message = 2;
+}
+
+service SimEngine {
+  rpc RunScenario(SimRequest) returns (stream SimEvent);
+  rpc PauseRun(RunRef) returns (RunStatus);
+  rpc ResumeRun(RunRef) returns (RunStatus);
+  rpc StepTurn(RunRef) returns (SimEvent);
+  rpc GetState(RunRef) returns (SimState);
+  rpc InjectEvent(EventInjection) returns (Ack);
+}

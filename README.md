@@ -61,9 +61,15 @@ Apex Global Defense is a simulation and strategic planning platform designed for
 
 ### Phase 2 — Simulation Core ✅
 
+- **Simulation Engine** (`sim-engine`, port 50051 gRPC) — Rust/tonic prototype scaffold
+  - gRPC contract and server implementation for run lifecycle operations (`RunScenario`, `PauseRun`, `ResumeRun`, `StepTurn`, `GetState`, `InjectEvent`)
+  - Dockerized service wired into `docker-compose.dev.yml`
+  - Current implementation is in-memory runtime state to establish engine/orchestrator integration path
 - **Sim Orchestrator** (`sim-orchestrator`, port 8085) — Python/FastAPI service managing simulation lifecycle
   - Turn-based, real-time, and Monte Carlo simulation modes
   - Start / pause / resume / step controls with live event feed
+  - gRPC integration path to `sim-engine` enabled in dev via `USE_GRPC_SIM_ENGINE=true`
+  - Automatic fallback to local stub engine when gRPC path is unavailable
   - Monte Carlo result panel: probability outcomes, casualty distributions
   - After-action report generation
 - **Logistics & Attrition Model** — Per-force supply levels (ammo/fuel/rations), strength %, KIA/WIA, equipment losses; RESUPPLY events; logistics summary in after-action reports
@@ -178,7 +184,7 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 | `training-svc` | 8096 | Python/FastAPI | ✅ Complete (Phase 4) |
 | `map-svc` | — | Go | ⏳ Future |
 | `ai-svc` | — | Python | ⏳ Future |
-| `sim-engine` | — | C++/Rust | ⏳ Future |
+| `sim-engine` | 50051 (gRPC) | Rust | ✅ Prototype scaffold |
 
 ### Infrastructure Services (dev)
 
@@ -188,6 +194,7 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 | Redis | 6379 | Cache + pub/sub |
 | Elasticsearch | 9200 | Full-text search |
 | Kafka | 9092 | Event bus |
+| sim-engine | 50051 | Rust gRPC simulation engine (prototype) |
 | Keycloak | 8180 | OIDC identity provider |
 | mbtiles-server | 8081 | Self-hosted map tiles |
 | Ollama | 11434 | Local LLM (air-gap AI) |
@@ -203,6 +210,8 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 
 > **Minimum resources (local dev):** 8 GB RAM, 4 CPU cores, 20 GB free disk.
 > The largest consumers are Elasticsearch (~5 GB image + index data), Ollama model storage (~4–8 GB per model), PostgreSQL data volumes, and Docker image layers for all services. If disk space is tight, you can comment out `ollama` and `elasticsearch` in `docker-compose.dev.yml` for a lighter start.
+>
+> **Database extension compatibility:** local init now degrades gracefully when `timescaledb` or `pgvector` are unavailable in the Postgres image. Core schema startup remains functional in dev, while time-series/vector features run in fallback mode.
 
 ---
 
@@ -454,7 +463,7 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | File | Description |
 |------|-------------|
 | `001_schema.sql` | Core tables: countries, military units, equipment, scenarios, intel items, audit log |
-| `002_oob_seed.sql` | 50-nation OOB seed data |
+| `002_seed_countries.sql` | Country metadata seed data (code/name/region/alliances, budgets, population) |
 | `003_cyber_schema.sql` | Cyber infrastructure nodes, edges, attacks |
 | `004_cbrn_schema.sql` | CBRN releases, dispersion simulations |
 | `005_asym_schema.sql` | Insurgent cells, cell links, IED incidents |

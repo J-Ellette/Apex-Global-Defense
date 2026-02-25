@@ -8,13 +8,12 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+import logging
 
 from app.auth import get_current_user, require_permission
-from app.engine.stub import (
-    build_after_action_report,
-    generate_run_events,
-    run_monte_carlo,
-)
+from app.config import settings
+from app.engine.grpc_client import stream_run_events
+from app.engine.stub import generate_run_events, run_monte_carlo
 from app.models import (
     AfterActionReport,
     ScenarioConfig,
@@ -25,6 +24,7 @@ from app.models import (
 )
 
 router = APIRouter(tags=["scenarios"])
+logger = logging.getLogger("sim-orchestrator.scenarios")
 
 
 def _db(request: Request):
@@ -136,7 +136,7 @@ async def start_run(
 
 
 async def _execute_run(db, redis, run_id: uuid.UUID, scenario_id: uuid.UUID, config: ScenarioConfig):
-    """Background task: run the stub engine and persist events."""
+    """Background task: run via gRPC sim-engine with stub fallback."""
 
     try:
         await db.execute(
@@ -150,11 +150,28 @@ async def _execute_run(db, redis, run_id: uuid.UUID, scenario_id: uuid.UUID, con
 
             await db.execute(
                 "UPDATE simulation_runs SET status='complete', progress=1, completed_at=NOW(), config=config || $1::jsonb WHERE id=$2",
-                _json.dumps({"mc_result": mc.model_dump(mode="json")}),
+                json.dumps({"mc_result": mc.model_dump(mode="json")}),
                 run_id,
             )
         else:
-            events = generate_run_events(run_id, config)
+            used_grpc_engine = False
+            events: list = []
+
+            if settings.use_grpc_sim_engine:
+                try:
+                    async for event in stream_run_events(run_id, config, settings.sim_engine_grpc_addr):
+                        events.append(event)
+                    used_grpc_engine = True
+                except Exception as grpc_exc:  # noqa: BLE001
+                    logger.warning(
+                        "gRPC sim-engine failed for run %s (%s); falling back to stub engine",
+                        run_id,
+                        grpc_exc,
+                    )
+
+            if not used_grpc_engine:
+                events = generate_run_events(run_id, config)
+
             total = len(events)
             for i, event in enumerate(events, 1):
                 await db.execute(

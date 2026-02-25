@@ -1,0 +1,20 @@
+[package]
+name = "sim-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.42", features = ["macros", "rt-multi-thread", "time", "sync"] }
+tokio-stream = "0.1"
+tonic = { version = "0.12", features = ["transport"] }
+prost = "0.13"
+prost-types = "0.13"
+uuid = { version = "1.11", features = ["v4"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+rand = "0.8"
+
+[build-dependencies]
+tonic-build = "0.12"

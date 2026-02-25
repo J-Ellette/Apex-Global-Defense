@@ -146,6 +146,8 @@ services:
     environment:
       DATABASE_URL: postgresql://agd:devpass@postgres:5432/agd_dev
       REDIS_URL: redis://redis:6379
+      SIM_ENGINE_GRPC_ADDR: sim-engine:50051
+      USE_GRPC_SIM_ENGINE: "true"
       JWT_SECRET: dev-secret-change-in-prod
       PORT: "8000"
       ENV: development
@@ -156,8 +158,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      sim-engine:
+        condition: service_started
       auth-svc:
         condition: service_started
+
+  sim-engine:
+    build:
+      context: ./services/sim-engine
+      dockerfile: Dockerfile
+    environment:
+      SIM_ENGINE_HOST: 0.0.0.0
+      SIM_ENGINE_PORT: "50051"
+    ports:
+      - "50051:50051"
 
   cyber-svc:
     build:

@@ -1,4 +1,5 @@
 # Apex Global Defense (AGD)
+
 ## Comprehensive Engineering Build Sheet — Version 2.0
 
 ---
@@ -712,16 +713,19 @@ enum EventType {
 ### 6.2 Simulation Modes
 
 #### Turn-Based
+
 - Discrete turns, each player (Red/Blue/Green) submits orders
 - Engine resolves combat, movement, logistics per turn
 - State is saved after each turn for replay/branch
 
 #### Real-Time
+
 - Continuous time with configurable time acceleration (1x–100x)
 - Agent-based units follow AI-driven decision trees
 - Events streamed to collab-svc in real-time
 
 #### Monte Carlo
+
 - N runs (default 1000) with randomized outcomes within confidence intervals
 - Outputs: probability distributions, outcome histograms, expected casualty ranges
 - Parallelized across available CPU cores
@@ -1569,6 +1573,7 @@ class ExerciseScorer:
 ## 15. Development Phases
 
 ### Phase 1 — MVP (Months 1–6)
+
 **Goal**: Working geospatial platform with OOB data and basic user management.
 
 - [x] Project scaffold: monorepo, CI/CD, dev Docker Compose
@@ -1584,6 +1589,7 @@ class ExerciseScorer:
 **Deliverable**: Web app where analysts can explore a global military OOB on an interactive map, create named scenarios, and configure AI providers.
 
 ### Phase 2 — Simulation Core (Months 7–12)
+
 **Goal**: Functional conventional warfare simulation engine.
 
 - [ ] C++/Rust sim engine with gRPC interface
@@ -1600,6 +1606,7 @@ class ExerciseScorer:
 **Deliverable**: Analysts can construct conventional conflict scenarios, run turn-based or real-time simulations, view probabilistic outcomes, and replay events.
 
 ### Phase 3 — Domain Expansion (Months 13–20)
+
 **Goal**: Multi-domain simulation capability.
 
 - [x] Cyber module (ATT&CK mapping, infrastructure graph)
@@ -1615,6 +1622,7 @@ class ExerciseScorer:
 **Deliverable**: Full multi-domain simulation with AI-assisted intelligence analysis.
 
 ### Phase 4 — Enterprise (Months 21–28)
+
 **Goal**: Enterprise-grade collaboration, integrations, and deployment hardening.
 
 - [x] Multi-user collaboration with role-based map control

@@ -4,12 +4,20 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Annotated
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth import get_current_user, require_permission
+from app.config import settings
+from app.engine.grpc_client import (
+    get_state as grpc_get_state,
+    pause_run as grpc_pause_run,
+    resume_run as grpc_resume_run,
+    step_turn as grpc_step_turn,
+)
 from app.engine.stub import build_after_action_report, generate_logistics_state, generate_run_events, run_monte_carlo
 from app.models import (
     AfterActionReport,
@@ -24,6 +32,7 @@ from app.models import (
 )
 
 router = APIRouter(tags=["runs"])
+logger = logging.getLogger("sim-orchestrator.runs")
 
 ClaimsDepend = Annotated[dict, Depends(get_current_user)]
 
@@ -80,6 +89,11 @@ async def pause_run(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
     row = await _get_run_or_404(db, run_id)
     if row["status"] != SimStatus.RUNNING:
         raise HTTPException(status_code=400, detail=f"Run is not running (status={row['status']})")
+    if settings.use_grpc_sim_engine:
+        try:
+            await grpc_pause_run(run_id, settings.sim_engine_grpc_addr)
+        except Exception as grpc_exc:  # noqa: BLE001
+            logger.warning("pause via gRPC failed for run %s; continuing with local state update: %s", run_id, grpc_exc)
     await db.execute(
         "UPDATE simulation_runs SET status='paused' WHERE id=$1", run_id
     )
@@ -110,6 +124,11 @@ async def resume_run(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
     row = await _get_run_or_404(db, run_id)
     if row["status"] != SimStatus.PAUSED:
         raise HTTPException(status_code=400, detail=f"Run is not paused (status={row['status']})")
+    if settings.use_grpc_sim_engine:
+        try:
+            await grpc_resume_run(run_id, settings.sim_engine_grpc_addr)
+        except Exception as grpc_exc:  # noqa: BLE001
+            logger.warning("resume via gRPC failed for run %s; continuing with local state update: %s", run_id, grpc_exc)
     await db.execute(
         "UPDATE simulation_runs SET status='running' WHERE id=$1", run_id
     )
@@ -153,12 +172,22 @@ async def step_run(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
         cfg_raw = json.loads(cfg_raw)
     config = ScenarioConfig(**cfg_raw)
 
-    events = generate_run_events(run_id, config, seed=next_turn)
-    # Return the first event of the new turn
-    turn_events = [e for e in events if e.turn_number == ((next_turn - 1) % max(1, len(events) // 5) + 1)]
-    event = turn_events[0] if turn_events else events[0]
-    # Adjust event turn number
-    event = event.model_copy(update={"turn_number": next_turn})
+    event = None
+    if settings.use_grpc_sim_engine:
+        try:
+            event = await grpc_step_turn(run_id, settings.sim_engine_grpc_addr)
+        except Exception as grpc_exc:  # noqa: BLE001
+            logger.warning("step via gRPC failed for run %s; falling back to stub step: %s", run_id, grpc_exc)
+
+    if event is None:
+        events = generate_run_events(run_id, config, seed=next_turn)
+        turn_events = [e for e in events if e.turn_number == ((next_turn - 1) % max(1, len(events) // 5) + 1)]
+        event = turn_events[0] if turn_events else events[0]
+        event = event.model_copy(update={"turn_number": next_turn})
+    else:
+        if not event.turn_number or event.turn_number <= 0:
+            event = event.model_copy(update={"turn_number": next_turn})
+        next_turn = event.turn_number
 
     await db.execute(
         """
@@ -203,6 +232,35 @@ async def get_state(run_id: uuid.UUID, claims: ClaimsDepend, request: Request):
     if isinstance(cfg_raw, str):
         cfg_raw = json.loads(cfg_raw)
     config = ScenarioConfig(**cfg_raw)
+
+    if settings.use_grpc_sim_engine:
+        try:
+            grpc_state = await grpc_get_state(run_id, settings.sim_engine_grpc_addr)
+            objectives = {"OBJ-1": "CONTESTED", "OBJ-2": "BLUE", "OBJ-3": "RED"}
+            if grpc_state.objectives_status_json:
+                try:
+                    parsed = json.loads(grpc_state.objectives_status_json)
+                    if isinstance(parsed, dict):
+                        objectives = {str(k): str(v) for k, v in parsed.items()}
+                except Exception:  # noqa: BLE001
+                    pass
+
+            sim_time = config.start_time + timedelta(hours=(grpc_state.turn_number or 0) * 4)
+            if grpc_state.sim_time_ms:
+                sim_time = datetime.fromtimestamp(grpc_state.sim_time_ms / 1000)
+
+            return SimState(
+                run_id=run_id,
+                status=SimStatus(row["status"]),
+                progress=float(grpc_state.progress) if grpc_state.progress else float(row["progress"]),
+                turn_number=grpc_state.turn_number,
+                sim_time=sim_time,
+                blue_unit_count=grpc_state.blue_unit_count,
+                red_unit_count=grpc_state.red_unit_count,
+                objectives_status=objectives,
+            )
+        except Exception as grpc_exc:  # noqa: BLE001
+            logger.warning("state via gRPC failed for run %s; falling back to DB-derived state: %s", run_id, grpc_exc)
 
     return SimState(
         run_id=run_id,

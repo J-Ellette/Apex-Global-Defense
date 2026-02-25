@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     jwt_secret: str = "dev-secret-change-in-prod"
     jwt_algorithm: str = "HS256"
+    sim_engine_grpc_addr: str = "sim-engine:50051"
+    use_grpc_sim_engine: bool = False
     port: int = 8000
     env: str = "development"
     cors_origins: list[str] = ["*"]

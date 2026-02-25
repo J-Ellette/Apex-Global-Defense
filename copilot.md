@@ -869,6 +869,106 @@ Phase 4 is now **complete** (except Mobile app, deferred per instructions):
 
 ---
 
+## Session 12 — Sim Engine Scaffold (2026-02-25)
+
+### Goal
+Start implementation of the remaining Phase 2 item by creating the C++/Rust simulation engine service with a gRPC interface.
+
+### What I Did This Session
+
+- [x] **Created `services/sim-engine/`** — Rust/tonic gRPC simulation engine scaffold
+  - `Cargo.toml` + `build.rs` + `src/main.rs`
+  - In-memory runtime state for active runs
+  - Deterministic synthetic event generation to exercise streaming path
+
+- [x] **Added gRPC contract** (`services/sim-engine/proto/sim_engine.proto`)
+  - RPCs implemented:
+    - `RunScenario(SimRequest) returns (stream SimEvent)`
+    - `PauseRun(RunRef) returns (RunStatus)`
+    - `ResumeRun(RunRef) returns (RunStatus)`
+    - `StepTurn(RunRef) returns (SimEvent)`
+    - `GetState(RunRef) returns (SimState)`
+    - `InjectEvent(EventInjection) returns (Ack)`
+
+- [x] **Containerized service** (`services/sim-engine/Dockerfile`)
+  - Added protobuf compiler in builder stage for proto codegen
+  - Exposes gRPC port `50051`
+
+- [x] **Integrated into local stack** (`docker-compose.dev.yml`)
+  - Added `sim-engine` service
+  - Added `SIM_ENGINE_GRPC_ADDR=sim-engine:50051` to `sim-orchestrator`
+  - Added `sim-orchestrator -> sim-engine` dependency
+
+- [x] **Validation**
+  - `docker compose -f docker-compose.dev.yml build sim-engine` succeeds
+
+### Stopping Point
+
+The Rust gRPC `sim-engine` prototype is now present and buildable in the dev stack. Orchestrator runtime is still on stub execution path until gRPC client calls are wired in.
+
+### What's Next (Session 13)
+
+- Wire `sim-orchestrator` to call `sim-engine` gRPC methods for run lifecycle operations
+- Keep stub engine as fallback path while hardening gRPC integration
+- Add integration tests for orchestrator ↔ engine roundtrip behavior
+
+---
+
+## Session 13 — Orchestrator gRPC Integration (2026-02-25)
+
+### Goal
+Integrate `services/sim-orchestrator/app/routers/scenarios.py` and `runs.py` to call the Rust gRPC `sim-engine`, while preserving a stable fallback to the existing stub path.
+
+### What I Did This Session
+
+- [x] **Added Python gRPC integration layer** (`services/sim-orchestrator/app/engine/grpc_client.py`)
+  - ScenarioConfig/SimEvent mapping between orchestrator models and protobuf messages
+  - Engine methods wrapped: stream run events, pause, resume, step, and get state
+
+- [x] **Generated and wired protobuf modules**
+  - `services/sim-orchestrator/app/engine/sim_engine_pb2.py`
+  - `services/sim-orchestrator/app/engine/sim_engine_pb2_grpc.py`
+  - Adjusted import to package-relative form for runtime compatibility
+
+- [x] **Updated orchestrator config and dependencies**
+  - `app/config.py`: `sim_engine_grpc_addr` + `use_grpc_sim_engine` flag
+  - `requirements.txt`: added `grpcio` and `protobuf`
+
+- [x] **Integrated run execution and control paths**
+  - `scenarios.py`: run dispatch uses gRPC stream when enabled; falls back to stub on any gRPC failure
+  - `runs.py`: `pause`, `resume`, `step`, and `state` call gRPC when enabled; fallback to existing DB/stub logic on failure
+
+- [x] **Enabled gRPC engine mode in local dev stack**
+  - `docker-compose.dev.yml`: `USE_GRPC_SIM_ENGINE=true` for `sim-orchestrator`
+
+- [x] **Validation**
+  - `docker compose -f docker-compose.dev.yml build sim-orchestrator` succeeds
+  - Direct smoke from orchestrator container to `sim-engine:50051` succeeds and streams events
+
+- [x] **Postgres init stabilization for local dev**
+  - `db/init/001_schema.sql` now handles missing `timescaledb` and `pgvector` extensions gracefully
+  - `sim_events` hypertable creation is conditional when TimescaleDB is available
+  - `intel_items.embedding` uses JSONB fallback when pgvector is unavailable
+  - `db/init/002_seed_countries.sql` empty `alliance_codes` arrays now cast as `TEXT[]` to prevent init failure
+
+- [x] **End-to-end API smoke (DB + JWT + orchestrator + sim-engine)**
+  - Inserted smoke user/scenario records satisfying FK constraints
+  - Started run via `POST /api/v1/scenarios/{id}/runs` with signed JWT
+  - Verified run lifecycle via `GET /api/v1/runs/{run_id}`
+  - Verified runtime state and persisted events via `GET /state` and `GET /events`
+
+### Stopping Point
+
+Orchestrator now supports dual-path execution: gRPC-first (when enabled) with automatic fallback to stub behavior for resilience, and the local DB init path is stable on a fresh volume.
+
+### What's Next (Session 14)
+
+- Stabilize Postgres startup in compose test path
+- Run full end-to-end API smoke: login/JWT, create or identify scenario, start run via orchestrator endpoint, verify events/state
+- Add integration tests for gRPC path and fallback assertions
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -890,7 +990,7 @@ Phase 4 is now **complete** (except Mobile app, deferred per instructions):
 | training-svc | 8096 | Python/FastAPI | ✅ Session 11 |
 | map-svc | — | Go | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
-| sim-engine | — | C++/Rust | ⏳ Future |
+| sim-engine | 50051 (gRPC) | Rust | ✅ Session 12 scaffold + Session 13 integration |
 
 ### Key Integration Points
 
@@ -910,3 +1010,32 @@ Phase 4 is now **complete** (except Mobile app, deferred per instructions):
 - **InfoOps svc**: `http://localhost:8094/api/v1` (consumed by frontend `VITE_INFOOPS_API_URL`)
 - **GIS Export svc**: `http://localhost:8095/api/v1` (consumed by frontend `VITE_GIS_API_URL`)
 - **Training svc**: `http://localhost:8096/api/v1` (consumed by frontend `VITE_TRAINING_API_URL`)
+- **Sim engine gRPC**: `sim-engine:50051` (configured in orchestrator via `SIM_ENGINE_GRPC_ADDR`)
+- **gRPC engine toggle**: `USE_GRPC_SIM_ENGINE=true` (dev compose)
+
+---
+
+## Session 14 — Docs + Full E2E Smoke Closure (2026-02-25)
+
+### Goal
+Finalize docs and verify a strict end-to-end API smoke after stabilizing Postgres startup in local dev.
+
+### What I Did This Session
+
+- [x] **Documentation alignment**
+  - Updated `README.md` to keep DB init script references aligned with repository (`002_seed_countries.sql`)
+  - Confirmed `README.md` and `copilot.md` both describe current sim-engine status as a Rust gRPC prototype scaffold with orchestrator fallback
+
+- [x] **Postgres startup stabilization verification**
+  - Confirmed local init path now tolerates environments without `timescaledb`/`pgvector`
+  - Confirmed seed-array typing fix prevents `ARRAY[]` type inference startup failures
+
+- [x] **Strict end-to-end API smoke (JWT + DB + orchestrator + sim-engine)**
+  - Started run via orchestrator API
+  - Verified run metadata transitioned to complete with progress set
+  - Verified state endpoint returned expected turn and force counts
+  - Verified persisted events were retrievable from events endpoint
+
+### Stopping Point
+
+Docs and runtime behavior are now synchronized for the current implementation: gRPC-first orchestration is active in dev, fallback behavior remains intact, and full API smoke passes on a fresh stabilized local stack.
