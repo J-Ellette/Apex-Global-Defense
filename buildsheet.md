@@ -1621,8 +1621,8 @@ class ExerciseScorer:
 - [x] Commercial intel feed integration (Recorded Future, Maxar, Jane's)
 - [x] STIX/TAXII cyber threat feed consumer
 - [x] Auto-report generation (SITREP, INTSUM, CONOPS briefs)
-- [ ] Classification handling hardening (row-level security, labels)
-- [ ] FedRAMP documentation and controls
+- [x] Classification handling hardening (row-level security, labels)
+- [x] FedRAMP documentation and controls
 - [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
 - [ ] Mobile app (React Native, read-only, offline maps)
 - [ ] Economic warfare module

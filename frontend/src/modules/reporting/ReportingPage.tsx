@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ClassificationBanner } from '../../shared/components/ClassificationBanner'
+import { ClassificationBadge } from '../../shared/components/ClassificationBadge'
 import { useAuthStore } from '../../app/providers/AuthProvider'
 import { reportingApi } from '../../shared/api/endpoints'
 import type {
@@ -469,6 +470,7 @@ export default function ReportingPage() {
                       <span className={`text-xs px-1.5 py-0.5 rounded ${STATUS_COLORS[r.status]}`}>
                         {r.status}
                       </span>
+                      <ClassificationBadge level={r.classification} />
                     </div>
                     <p className="text-sm text-white truncate">{r.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -499,9 +501,7 @@ export default function ReportingPage() {
                       <span className={`text-xs px-1.5 py-0.5 rounded ${STATUS_COLORS[selected.status]}`}>
                         {selected.status}
                       </span>
-                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">
-                        {selected.classification}
-                      </span>
+                      <ClassificationBadge level={selected.classification} />
                     </div>
                     <h2 className="text-lg font-semibold text-white">{selected.title}</h2>
                     <p className="text-xs text-gray-400 mt-0.5">

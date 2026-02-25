@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ClassificationBanner } from '../../shared/components/ClassificationBanner'
+import { ClassificationBadge } from '../../shared/components/ClassificationBadge'
 import { useAuthStore } from '../../app/providers/AuthProvider'
 import { intelApi } from '../../shared/api/endpoints'
 import type {
@@ -296,9 +297,7 @@ function IntelItemCard({ item, onSelect }: { item: IntelItem; onSelect: () => vo
             <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${SOURCE_TYPE_COLORS[item.source_type] ?? 'bg-gray-700 text-gray-300'}`}>
               {item.source_type}
             </span>
-            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono border border-gray-600">
-              {item.classification}
-            </span>
+            <ClassificationBadge level={item.classification} />
             <span className="text-xs text-gray-500">R:{item.reliability} C:{item.credibility}</span>
           </div>
           <h3 className="text-white font-medium text-sm leading-snug">{item.title}</h3>
