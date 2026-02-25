@@ -55,11 +55,6 @@ while IFS='|' read -r image tarfile; do
   docker load -i "${tarpath}"
 
   if [ -n "${PUSH_REGISTRY}" ]; then
-    # Determine the short image name (strip any existing registry prefix)
-    shortname="${image##*/}"
-    # Preserve repo/tag structure within registry
-    new_tag="${PUSH_REGISTRY}/${image%%:*##*/}:${image##*:}"
-    # Simpler: push as registry/original-image
     new_tag="${PUSH_REGISTRY}/${image}"
     log "  Tagging ${image} → ${new_tag}"
     docker tag "${image}" "${new_tag}"
