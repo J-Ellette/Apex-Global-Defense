@@ -68,6 +68,9 @@ func main() {
 
 	r.GET("/ws/:scenario_id", wsHandler.ServeWS)
 	r.GET("/presence/:scenario_id", wsHandler.PresenceHandler)
+	r.GET("/rooms/:scenario_id/control", wsHandler.GetMapControlHandler)
+	r.POST("/rooms/:scenario_id/control/request", wsHandler.RequestMapControlHandler)
+	r.DELETE("/rooms/:scenario_id/control", wsHandler.ReleaseMapControlHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

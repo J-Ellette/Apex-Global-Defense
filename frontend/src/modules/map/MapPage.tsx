@@ -4,6 +4,7 @@ import { ClassificationBanner } from '../../shared/components/ClassificationBann
 import { MapCanvas } from './MapCanvas'
 import { LayerPanel } from './LayerPanel'
 import { AnnotationToolbar, type DrawMode } from './AnnotationToolbar'
+import { CollabPanel } from './CollabPanel'
 import { useMapLayers } from './hooks/useMapLayers'
 
 // Annotation shape stored in local state (persisted to scenario on save).
@@ -17,10 +18,12 @@ export interface Annotation {
 
 export default function MapPage() {
   const classification = useAuthStore((s) => s.user?.classification ?? 'UNCLASS')
-  const { layers, toggleLayer, setOpacity, isVisible } = useMapLayers()
+  const { layers, toggleLayer, setOpacity } = useMapLayers()
 
   const [drawMode, setDrawMode]     = useState<DrawMode>('none')
   const [annotations, setAnnotations] = useState<Annotation[]>([])
+  // Default scenario for collab: in production this would come from router state
+  const collabScenarioId = 'global'
 
   const handleAnnotationAdd = useCallback((annotation: Annotation) => {
     setAnnotations((prev) => [...prev, annotation])
@@ -68,6 +71,9 @@ export default function MapPage() {
           onToggle={toggleLayer}
           onOpacityChange={setOpacity}
         />
+
+        {/* Floating collaboration panel */}
+        <CollabPanel scenarioId={collabScenarioId} />
 
         {/* Deactivate draw mode on ESC */}
         <div

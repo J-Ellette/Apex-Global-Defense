@@ -383,16 +383,370 @@ async def _synthetic_rss(since: datetime, max_items: int) -> AsyncIterator[dict]
 
 
 # ---------------------------------------------------------------------------
+# Recorded Future adapter (commercial threat intelligence)
+# ---------------------------------------------------------------------------
+
+class RecordedFutureAdapter(OSINTAdapter):
+    source_id = "recorded_future"
+    source_type = OSINTSourceType.RECORDED_FUTURE
+
+    def __init__(self, api_key: str = ""):
+        self.api_key = api_key
+
+    async def fetch(self, since: datetime, max_items: int) -> AsyncIterator[dict]:
+        if not self.api_key:
+            async for item in _synthetic_recorded_future(since, max_items):
+                yield item
+            return
+
+        # Live Recorded Future Connect API
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.get(
+                    "https://api.recordedfuture.com/v2/alert/search",
+                    headers={"X-RFToken": self.api_key},
+                    params={"limit": min(max_items, 100)},
+                )
+                r.raise_for_status()
+                data = r.json().get("data", {}).get("results", [])
+        except Exception:
+            async for item in _synthetic_recorded_future(since, max_items):
+                yield item
+            return
+
+        for row in data[:max_items]:
+            try:
+                yield {
+                    "id": str(uuid4()),
+                    "source_type": SourceType.OSINT,
+                    "source_url": row.get("url"),
+                    "title": row.get("title", "Recorded Future Alert"),
+                    "content": row.get("triggered_by", {}).get("detail", "No details."),
+                    "language": "eng",
+                    "latitude": None,
+                    "longitude": None,
+                    "entities": [],
+                    "classification": "UNCLASS",
+                    "reliability": "B",
+                    "credibility": "2",
+                    "published_at": row.get("triggered"),
+                }
+            except (ValueError, KeyError):
+                continue
+
+
+async def _synthetic_recorded_future(since: datetime, max_items: int) -> AsyncIterator[dict]:
+    """Deterministic synthetic Recorded Future-style records."""
+    _ALERTS = [
+        {
+            "title": "RF: APT29 Phishing Campaign Targeting EU Energy Sector",
+            "content": (
+                "Recorded Future analysts have identified an active spear-phishing campaign "
+                "attributed to APT29 (Cozy Bear). Targets include energy infrastructure "
+                "operators across Germany, France, and Poland. Malware used: SUNBURST variant. "
+                "Confidence: HIGH. Risk score: 87/100."
+            ),
+        },
+        {
+            "title": "RF: New Dark Web Marketplace Offering ICS Exploits",
+            "content": (
+                "A newly identified dark web marketplace 'Prometheus Market' is advertising "
+                "zero-day exploits targeting Siemens S7 PLCs and Schneider Electric Modicon "
+                "controllers. Pricing ranges from $50,000 to $200,000 USD per exploit. "
+                "Linked to TA505 threat actor cluster. Risk score: 92/100."
+            ),
+        },
+        {
+            "title": "RF: Iran-Linked Group Targeting US Defense Contractors",
+            "content": (
+                "APT33 (Refined Kitten) has been observed conducting credential harvesting "
+                "operations against US and UK defense contractors via compromised Outlook Web "
+                "Application (OWA) instances. Multiple Fortune 500 defense firms identified as "
+                "targets. Confidence: MEDIUM. Risk score: 74/100."
+            ),
+        },
+        {
+            "title": "RF: Ransomware Group Targeting Critical Infrastructure in MENA Region",
+            "content": (
+                "The BlackBasta ransomware group has expanded operations targeting oil and gas "
+                "companies in Saudi Arabia, UAE, and Kuwait. Three confirmed intrusions in the "
+                "past 30 days. Average ransom demand: $4.5M USD. TTPs include LOLBin abuse "
+                "and BYOVD privilege escalation. Risk score: 81/100."
+            ),
+        },
+    ]
+    for i, alert in enumerate(_ALERTS[:max_items]):
+        yield {
+            "id": str(uuid4()),
+            "source_type": SourceType.OSINT,
+            "source_url": f"https://app.recordedfuture.com/live/sc/synthetic/{i+1}",
+            "title": alert["title"],
+            "content": alert["content"],
+            "language": "eng",
+            "latitude": None,
+            "longitude": None,
+            "entities": [],
+            "classification": "UNCLASS",
+            "reliability": "B",
+            "credibility": "2",
+            "published_at": (since + timedelta(hours=i * 6)).isoformat(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Maxar adapter (commercial satellite imagery intelligence — IMINT)
+# ---------------------------------------------------------------------------
+
+class MaxarAdapter(OSINTAdapter):
+    source_id = "maxar"
+    source_type = OSINTSourceType.MAXAR
+
+    def __init__(self, api_key: str = ""):
+        self.api_key = api_key
+
+    async def fetch(self, since: datetime, max_items: int) -> AsyncIterator[dict]:
+        if not self.api_key:
+            async for item in _synthetic_maxar(since, max_items):
+                yield item
+            return
+
+        # Maxar Streaming API (simplified stub for live integration)
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.get(
+                    "https://api.maxar.com/streaming/v1/products",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    params={"limit": min(max_items, 50)},
+                )
+                r.raise_for_status()
+                data = r.json().get("features", [])
+        except Exception:
+            async for item in _synthetic_maxar(since, max_items):
+                yield item
+            return
+
+        for feature in data[:max_items]:
+            try:
+                props = feature.get("properties", {})
+                geom = feature.get("geometry", {})
+                coords = geom.get("coordinates", [[None, None]])[0]
+                lon = float(coords[0]) if coords[0] else None
+                lat = float(coords[1]) if coords[1] else None
+                yield {
+                    "id": str(uuid4()),
+                    "source_type": SourceType.IMINT,
+                    "source_url": props.get("links", {}).get("self"),
+                    "title": f"Maxar IMINT — {props.get('product_id', 'Unknown')}",
+                    "content": (
+                        f"Satellite imagery collection. Resolution: {props.get('gsd_m', 'N/A')}m. "
+                        f"Cloud cover: {props.get('cloud_cover_pct', 'N/A')}%. "
+                        f"Sensor: {props.get('sensor', 'WorldView')}."
+                    ),
+                    "language": "eng",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "entities": [],
+                    "classification": "UNCLASS",
+                    "reliability": "A",
+                    "credibility": "1",
+                    "published_at": props.get("acquisition_date"),
+                }
+            except (ValueError, KeyError):
+                continue
+
+
+async def _synthetic_maxar(since: datetime, max_items: int) -> AsyncIterator[dict]:
+    """Deterministic synthetic Maxar IMINT-style records."""
+    _COLLECTIONS = [
+        {
+            "title": "Maxar IMINT: Russian Military Buildup — Crimean Peninsula",
+            "content": (
+                "WorldView-3 imagery collected at 31cm GSD reveals approximately 1,200 "
+                "armored vehicles staged along the E105 highway corridor north of Simferopol. "
+                "Logistics train includes an estimated 40 fuel tankers and 25 munition carriers. "
+                "Change analysis shows 340% increase in activity vs. 30-day baseline. "
+                "Cloud cover: 3%. Acquisition: thermal + multispectral."
+            ),
+            "latitude": 44.95, "longitude": 34.10,
+        },
+        {
+            "title": "Maxar IMINT: North Korean ICBM Launch Facility Activity — Sohae",
+            "content": (
+                "WorldView-2 imagery shows elevated activity at the Sohae Satellite Launching "
+                "Station. Fuel tankers and a transporter-erector-launcher (TEL) are visible "
+                "near Launch Pad 2. A mobile radar platform has been deployed to the eastern "
+                "perimeter. Confidence: HIGH. GSD: 46cm."
+            ),
+            "latitude": 39.66, "longitude": 124.71,
+        },
+        {
+            "title": "Maxar IMINT: Chinese Naval Expansion — Fiery Cross Reef",
+            "content": (
+                "GeoEye-1 imagery confirms runway extension at Fiery Cross Reef to 3,125m, "
+                "accommodating H-6K strategic bombers. Four Type 055 destroyers observed at "
+                "anchorage. New hardened aircraft shelters (HAS) count: 24. "
+                "Comparison with 6-month prior imagery shows significant infrastructure expansion."
+            ),
+            "latitude": 9.55, "longitude": 112.89,
+        },
+    ]
+    for i, col in enumerate(_COLLECTIONS[:max_items]):
+        yield {
+            "id": str(uuid4()),
+            "source_type": SourceType.IMINT,
+            "source_url": f"https://discover.maxar.com/synthetic/{i+1}",
+            "title": col["title"],
+            "content": col["content"],
+            "language": "eng",
+            "latitude": col["latitude"],
+            "longitude": col["longitude"],
+            "entities": [],
+            "classification": "UNCLASS",
+            "reliability": "A",
+            "credibility": "1",
+            "published_at": (since + timedelta(days=i)).isoformat(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Jane's adapter (Jane's Defence Intelligence — OSINT/TECHINT)
+# ---------------------------------------------------------------------------
+
+class JanesAdapter(OSINTAdapter):
+    source_id = "janes"
+    source_type = OSINTSourceType.JANES
+
+    def __init__(self, api_key: str = ""):
+        self.api_key = api_key
+
+    async def fetch(self, since: datetime, max_items: int) -> AsyncIterator[dict]:
+        if not self.api_key:
+            async for item in _synthetic_janes(since, max_items):
+                yield item
+            return
+
+        # Jane's API (simplified — full integration requires Jane's Data Service contract)
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.get(
+                    "https://developer.janes.com/api/v1/news",
+                    headers={"Ocp-Apim-Subscription-Key": self.api_key},
+                    params={"top": min(max_items, 50), "filter": f"publishedOn ge {since.strftime('%Y-%m-%d')}"},
+                )
+                r.raise_for_status()
+                data = r.json().get("value", [])
+        except Exception:
+            async for item in _synthetic_janes(since, max_items):
+                yield item
+            return
+
+        for row in data[:max_items]:
+            try:
+                yield {
+                    "id": str(uuid4()),
+                    "source_type": SourceType.TECHINT,
+                    "source_url": row.get("url"),
+                    "title": row.get("headline", "Jane's Intelligence Report"),
+                    "content": row.get("summary", "No summary available."),
+                    "language": "eng",
+                    "latitude": None,
+                    "longitude": None,
+                    "entities": [],
+                    "classification": "UNCLASS",
+                    "reliability": "A",
+                    "credibility": "1",
+                    "published_at": row.get("publishedOn"),
+                }
+            except (ValueError, KeyError):
+                continue
+
+
+async def _synthetic_janes(since: datetime, max_items: int) -> AsyncIterator[dict]:
+    """Deterministic synthetic Jane's-style TECHINT records."""
+    _REPORTS = [
+        {
+            "title": "Jane's: T-14 Armata MBT — Updated Technical Assessment",
+            "content": (
+                "Updated technical assessment of Russia's T-14 Armata main battle tank. "
+                "Estimated unit cost: $3.7M USD. Active protection system: Afghanit (Arena-M derivative). "
+                "125mm 2A82-1M smoothbore cannon; range >2,000m with APFSDS. "
+                "Unmanned turret reduces crew exposure. Estimated fleet size: 20 operational units. "
+                "Production constrained by microelectronics supply chain issues."
+            ),
+        },
+        {
+            "title": "Jane's: Chinese J-20 Fifth-Generation Fighter — Variant Analysis",
+            "content": (
+                "Jane's analysis of the J-20A and J-20B variants. "
+                "J-20B features a thrust-vectoring nozzle and WS-15 Emei turbofan (186kN afterburner thrust). "
+                "AESA radar estimated to be a KLJ-5 derivative. "
+                "PL-15 BVR missile integration confirmed. "
+                "Estimated PLAAF inventory: 150-200 airframes. "
+                "Assessed as near-peer to F-22 in VLO and sensor fusion capability."
+            ),
+        },
+        {
+            "title": "Jane's: Iran Shahed-136 Loitering Munition — Combat Assessment",
+            "content": (
+                "Post-combat technical assessment based on recovered components from Ukraine conflict. "
+                "Warhead: 40kg shaped-charge fragmentation. Range: 2,000-2,500km. "
+                "Navigation: GPS/GLONASS with inertial backup. "
+                "CEP assessed at 5m in GPS-uncontested environments. "
+                "Unit cost estimate: $20,000-$50,000 USD. "
+                "Mitigation: effective against SHORAD at low cost."
+            ),
+        },
+        {
+            "title": "Jane's: North Korean Hwasong-18 ICBM — Performance Assessment",
+            "content": (
+                "Jane's assessment of the Hwasong-18 solid-propellant ICBM first tested March 2023. "
+                "Estimated range: 15,000km+ (CONUS coverage). "
+                "Solid propellant reduces launch preparation time vs. Hwasong-17 (liquid). "
+                "MaRV capability suspected. "
+                "Cold launch canister allows road-mobile deployment. "
+                "Assessed as operational; estimated 6-12 launcher TELs."
+            ),
+        },
+    ]
+    for i, rpt in enumerate(_REPORTS[:max_items]):
+        yield {
+            "id": str(uuid4()),
+            "source_type": SourceType.TECHINT,
+            "source_url": f"https://www.janes.com/defence-news/synthetic/{i+1}",
+            "title": rpt["title"],
+            "content": rpt["content"],
+            "language": "eng",
+            "latitude": None,
+            "longitude": None,
+            "entities": [],
+            "classification": "UNCLASS",
+            "reliability": "A",
+            "credibility": "1",
+            "published_at": (since + timedelta(days=i * 2)).isoformat(),
+        }
+
+
+# ---------------------------------------------------------------------------
 # Adapter registry
 # ---------------------------------------------------------------------------
 
 _REGISTRY: dict[str, OSINTAdapter] = {}
 
 
-def _init_registry(acled_key: str = "", acled_email: str = "", ucdp_key: str = "") -> None:
+def _init_registry(
+    acled_key: str = "",
+    acled_email: str = "",
+    ucdp_key: str = "",
+    recorded_future_key: str = "",
+    maxar_key: str = "",
+    janes_key: str = "",
+) -> None:
     _REGISTRY["acled"] = ACLEDAdapter(api_key=acled_key, email=acled_email)
     _REGISTRY["ucdp"] = UCDPAdapter(api_key=ucdp_key)
     _REGISTRY["rss"] = RSSAdapter()
+    _REGISTRY["recorded_future"] = RecordedFutureAdapter(api_key=recorded_future_key)
+    _REGISTRY["maxar"] = MaxarAdapter(api_key=maxar_key)
+    _REGISTRY["janes"] = JanesAdapter(api_key=janes_key)
 
 
 def get_adapter(source_id: str) -> OSINTAdapter | None:

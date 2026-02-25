@@ -13,15 +13,5 @@ class Settings(BaseSettings):
     env: str = "development"
     cors_origins: list[str] = ["*"]
 
-    # OSINT adapter config (optional; adapters run in stub mode if not set)
-    acled_api_key: str = ""
-    acled_email: str = ""
-    ucdp_api_key: str = ""
-
-    # Commercial intel feed credentials (optional; use synthetic stubs if not set)
-    recorded_future_api_key: str = ""
-    maxar_api_key: str = ""
-    janes_api_key: str = ""
-
 
 settings = Settings()

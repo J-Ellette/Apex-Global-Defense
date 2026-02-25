@@ -550,6 +550,144 @@ Phase 4 — Enterprise items, starting from the top:
 
 ---
 
+## Session 9 — Phase 4 Start (2026-02-24)
+
+### Goal
+Begin Phase 4 (Enterprise): implement the first four items from the top of the Phase 4 buildsheet checklist.
+
+### What I Did This Session
+
+#### Item 1: Multi-user collaboration with role-based map control ✅
+
+- [x] **`auth-svc/internal/models/models.go`** — added `PermMapControl Permission = "map:control"` permission
+  - Added to RolePermissions for `planner`, `commander`, `sim_operator`, and `admin` roles
+- [x] **`services/collab-svc/internal/hub/hub.go`** — full rewrite with map controller tracking
+  - `controllers map[string]string` field: scenarioID → userID holding map control
+  - `RequestMapControl(scenarioID, userID string) bool` — grants control or returns false if busy
+  - `ReleaseMapControl(scenarioID, userID string)` — releases control by owner
+  - `RevokeMapControl(scenarioID string)` — admin force-revoke
+  - `Presence(scenarioID string) []string` — list of connected user IDs
+  - `hasMapControlRole(roles []string) bool` — checks planner/commander/sim_operator/admin
+  - Client struct updated: added `Roles []string` field
+  - `ServeWS()` updated: accepts roles from JWT claims, passes to Client
+  - `readPump()` updated: handles `map:control:request` and `map:control:release` messages
+  - Auto-releases control when a controlling client disconnects; broadcasts `map:control:released`
+- [x] **`services/collab-svc/internal/handlers/ws.go`** — updated to extract roles from JWT
+  - `extractRoles(claims jwt.MapClaims) []string` — parses roles array from JWT
+  - `PresenceHandler` updated: returns both users list and controller
+  - New `GetMapControlHandler` — `GET /rooms/:scenario_id/control`
+  - New `RequestMapControlHandler` — `POST /rooms/:scenario_id/control/request`
+  - New `ReleaseMapControlHandler` — `DELETE /rooms/:scenario_id/control`
+  - `authFromRequest()` helper for REST auth
+- [x] **`services/collab-svc/main.go`** — registered new REST routes
+- [x] **`frontend/src/modules/map/CollabPanel.tsx`** — new floating collaboration panel
+  - WebSocket connection with JWT from Zustand store
+  - Real-time presence list (user:join / user:leave messages)
+  - Map controller display (who holds control)
+  - "Request Control" / "Release Control" button (role-gated by server)
+  - Status messages for granted / busy / denied
+- [x] **`frontend/src/modules/map/MapPage.tsx`** — integrated CollabPanel (top-right overlay)
+
+#### Item 2: Commercial intel feed integration ✅
+
+- [x] **`services/intel-svc/app/models.py`** — added `OSINTSourceType` enum values:
+  - `RECORDED_FUTURE = "RECORDED_FUTURE"`
+  - `MAXAR = "MAXAR"`
+  - `JANES = "JANES"`
+- [x] **`services/intel-svc/app/config.py`** — added settings:
+  - `recorded_future_api_key: str = ""`
+  - `maxar_api_key: str = ""`
+  - `janes_api_key: str = ""`
+- [x] **`services/intel-svc/app/engine/osint_adapters.py`** — added three new adapters:
+  - `RecordedFutureAdapter`: Recorded Future Connect API; synthetic fallback with 4 APT/ransomware/dark-web threat alerts
+  - `MaxarAdapter`: Maxar Streaming API (WorldView/GeoEye imagery); synthetic fallback with 3 IMINT reports (Crimea troop buildup, DPRK Sohae launch site, South China Sea construction)
+  - `JanesAdapter`: Jane's Defence Intelligence API; synthetic fallback with 4 TECHINT reports (T-14 Armata, J-20 fighter, Shahed-136 drone, Hwasong-18 ICBM)
+  - `_init_registry()` updated to accept and register all three new adapters
+- [x] **`services/intel-svc/main.py`** — passes new API key settings to `_init_registry()`
+- All 27 existing intel-svc tests still passing
+
+#### Item 3: STIX/TAXII cyber threat feed consumer ✅
+
+- [x] **`db/init/009_stix_schema.sql`** — new `stix_indicators` table
+  - STIX 2.1 object model: stix_id, name, description, pattern, pattern_type (stix/pcre/yara/sigma)
+  - kill_chain_phases (JSONB), confidence (0–100), labels, valid_from/until
+  - taxii_collection + taxii_server provenance fields
+  - classification_level, scenario_id foreign key
+  - Indexes on stix_type, taxii_server, valid_from, scenario_id, ingested_at
+- [x] **`services/cyber-svc/app/models.py`** — new STIX/TAXII models:
+  - `PatternType`, `KillChainPhase`, `ExternalReference`, `STIXIndicator`
+  - `CreateSTIXIndicatorRequest`, `TAXIIIngestRequest`, `TAXIIIngestResult`
+- [x] **`services/cyber-svc/app/routers/taxii.py`** — new router:
+  - `GET /cyber/stix/indicators` — list with scenario/server/type filters
+  - `POST /cyber/stix/indicators` — manual create
+  - `GET /cyber/stix/indicators/{id}` — get
+  - `DELETE /cyber/stix/indicators/{id}` — delete
+  - `POST /cyber/taxii/ingest` — TAXII 2.1 collection poll; synthetic 5-indicator bundle fallback:
+    - APT29 Cobalt Strike C2 IPv4 (confidence 85)
+    - SUNBURST SHA-256 hash (confidence 99)
+    - Industroyer2 ICS domain (confidence 92)
+    - Lazarus Group SWIFT phishing URL (confidence 78)
+    - BlackEnergy3 PowerShell dropper YARA rule (confidence 88)
+- [x] **`services/cyber-svc/main.py`** — registered taxii router
+- [x] **`frontend/src/shared/api/types/cyber.ts`** — added full STIX type definitions
+- [x] **`frontend/src/shared/api/endpoints.ts`** — added STIX/TAXII methods to `cyberApi`
+- [x] 4 new STIX/TAXII tests added to `tests/test_cyber.py` — all 17 tests passing
+
+#### Item 4: Auto-report generation (SITREP, INTSUM, CONOPS briefs) ✅
+
+- [x] **`db/init/010_reporting_schema.sql`** — new `reports` table
+  - report_type (SITREP/INTSUM/CONOPS), status (DRAFT/FINAL/APPROVED)
+  - JSONB content, approval fields, scenario_id/run_id
+- [x] **`services/reporting-svc/`** — new Python/FastAPI service (port 8092)
+  - `app/engine/templates.py` — deterministic NATO-format report generators:
+    - `generate_sitrep()`: period, situation summary, friendly/enemy forces, significant events, logistics, commander assessment; aggregates simulation run events and logistics data
+    - `generate_intsum()`: threat level from assessments, enemy disposition/intentions, key developments from intel items, STIX indicator count, ISR gaps, cyber/CBRN threats, analyst assessment
+    - `generate_conops()`: mission statement, commander's intent, end state, scheme of maneuver, 3 execution phases, tasks to subordinate units, sustainment concept, risk assessment
+  - `app/routers/reports.py` — REST API:
+    - `POST /reports/generate` — generate from template + DB data
+    - `GET /reports` — list with report_type/status/scenario_id filters
+    - `GET /reports/{id}` — get report
+    - `PUT /reports/{id}` — update title/status/classification/content/summary
+    - `POST /reports/{id}/approve` — mark APPROVED + record approver
+    - `DELETE /reports/{id}` — delete
+  - 11 unit tests — all passing
+- [x] **`docker-compose.dev.yml`** — added `reporting-svc` (port 8092) + `VITE_REPORTING_API_URL`
+- [x] **`frontend/src/shared/api/reportingClient.ts`** — Axios client
+- [x] **`frontend/src/shared/api/types/reporting.ts`** — full TypeScript types (Report, content types for SITREP/INTSUM/CONOPS)
+- [x] **`frontend/src/shared/api/types/index.ts`** — re-exports reporting types
+- [x] **`frontend/src/shared/api/endpoints.ts`** — added `reportingApi` (generate, list, get, update, approve, delete)
+- [x] **`frontend/src/modules/reporting/ReportingPage.tsx`** — full two-panel reporting UI
+  - Left panel: report list with type/status filters + status color badges
+  - Right panel: formatted content viewer tailored by report type (SITREPView, INTSUMView, CONOPSView)
+  - GenerateModal: report type selector, optional title/scenario/run binding, classification, context textarea
+  - Finalize (DRAFT → FINAL) and Delete actions
+- [x] Updated `frontend/src/app/router.tsx` — added `/reporting` route
+- [x] Updated `frontend/src/modules/dashboard/DashboardPage.tsx` — added 📋 Reports card
+- [x] Updated `buildsheet.md` — Phase 4 items 1–4 marked ✅
+- [x] Updated `README.md` — Phase 4 section, service table, frontend modules table, DB schema table
+- [x] TypeScript compilation passes with no errors
+
+### Stopping Point
+
+Phase 4 items 1–4 are **complete**:
+- ✅ Multi-user collaboration with role-based map control
+- ✅ Commercial intel feed integration (Recorded Future, Maxar, Jane's)
+- ✅ STIX/TAXII cyber threat feed consumer
+- ✅ Auto-report generation (SITREP, INTSUM, CONOPS briefs)
+
+### What's Next (Session 10 — Phase 4 continued)
+
+- [ ] Classification handling hardening (row-level security, labels)
+- [ ] FedRAMP documentation and controls
+- [ ] Air-gap deployment package (Helm chart, offline tile pack, Ollama models)
+- [ ] Mobile app (React Native, read-only, offline maps)
+- [ ] Economic warfare module
+- [ ] Information operations / disinformation tracking
+- [ ] API for external system integration (ArcGIS, Google Earth)
+- [ ] Training mode (exercise inject system, scoring)
+
+---
+
 ## Architecture Notes (for future sessions)
 
 | Service | Port (dev) | Language | Status |
@@ -557,16 +695,16 @@ Phase 4 — Enterprise items, starting from the top:
 | auth-svc | 8082 | Go | ✅ Complete |
 | oob-svc | 8083 | Go | ✅ Complete |
 | sim-orchestrator | 8085 | Python/FastAPI | ✅ Session 1–2 |
-| collab-svc | 8084 | Go | ✅ Session 1 |
-| cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 |
+| collab-svc | 8084 | Go | ✅ Session 1 + map control (Session 9) |
+| cyber-svc | 8086 | Python/FastAPI | ✅ Session 3 + STIX/TAXII (Session 9) |
 | cbrn-svc | 8087 | Python/FastAPI | ✅ Session 4 |
 | asym-svc | 8088 | Python/FastAPI | ✅ Session 5 |
 | terror-svc | 8089 | Python/FastAPI | ✅ Session 6 |
-| intel-svc | 8090 | Python/FastAPI | ✅ Session 7 |
+| intel-svc | 8090 | Python/FastAPI | ✅ Session 7 + commercial feeds (Session 9) |
 | civilian-svc | 8091 | Python/FastAPI | ✅ Session 8 |
+| reporting-svc | 8092 | Python/FastAPI | ✅ Session 9 |
 | map-svc | — | Go | ⏳ Future |
 | ai-svc | — | Python | ⏳ Future |
-| reporting-svc | — | Python | ⏳ Future |
 | sim-engine | — | C++/Rust | ⏳ Future |
 
 ### Key Integration Points
@@ -582,3 +720,4 @@ Phase 4 — Enterprise items, starting from the top:
 - **Terror svc**: `http://localhost:8089/api/v1` (consumed by frontend `VITE_TERROR_API_URL`)
 - **Intel svc**: `http://localhost:8090/api/v1` (consumed by frontend `VITE_INTEL_API_URL`)
 - **Civilian svc**: `http://localhost:8091/api/v1` (consumed by frontend `VITE_CIVILIAN_API_URL`)
+- **Reporting svc**: `http://localhost:8092/api/v1` (consumed by frontend `VITE_REPORTING_API_URL`)

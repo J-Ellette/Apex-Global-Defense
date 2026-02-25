@@ -62,6 +62,9 @@ class OSINTSourceType(str, Enum):
     UCDP = "UCDP"
     RSS = "RSS"
     MANUAL = "MANUAL"
+    RECORDED_FUTURE = "RECORDED_FUTURE"
+    MAXAR = "MAXAR"
+    JANES = "JANES"
 
 
 class OSINTSourceStatus(str, Enum):
