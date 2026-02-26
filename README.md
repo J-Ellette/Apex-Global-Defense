@@ -512,6 +512,13 @@ Progress against [`improvements.md`](./improvements.md):
 
 All schema initialization scripts are in `db/init/` and run automatically on first `make dev`:
 
+Reusable seed sanity checks (equipment category counts, duplicate `type_code` guard, and missing `origin_country` references) are available at `scripts/db-seed-sanity.sql`.
+Run in one command:
+
+```bash
+docker exec -i <postgres-container> psql -U agd -d agd_dev -v ON_ERROR_STOP=1 -f /dev/stdin < scripts/db-seed-sanity.sql
+```
+
 | File | Description |
 |------|-------------|
 | `001_schema.sql` | Core tables: countries, military units, equipment, scenarios, intel items, audit log |
@@ -529,7 +536,7 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `013_infoops_schema.sql` | Narrative threats, influence campaigns, disinformation indicators, attribution assessments |
 | `014_gis_export_schema.sql` | GIS integration configuration (ArcGIS, Google Earth, WMS/WFS) |
 | `015_training_schema.sql` | Training exercises, scripted injects, objectives with scoring |
-| `016_event_archival.sql` | Archival functions and archive tables for `sim_events` (90-day) and `audit_log` (180-day); union views `v_sim_events_all`, `v_audit_log_all` |
+| `016_event_archival.sql` | Archival functions and archive tables for `sim_events` (90-day) and `audit_log` (180-day), aligned to `audit_log` columns (`user_id`, `time`); union views `v_sim_events_all`, `v_audit_log_all` |
 | `017_econ_seed_expansion.sql` | Economic seed expansion: country backfill, additional sanction targets, trade routes, and indicators |
 | `018_infoops_seed_expansion.sql` | InfoOps seed expansion: additional narrative threats, influence campaigns, disinformation indicators, and attribution assessments |
 | `019_equipment_catalog_seed.sql` | Equipment catalog expansion: ARMOR, IFV/APC, AIRCRAFT, HELICOPTER, NAVAL, MISSILE, and ARTILLERY entries with JSONB specs |

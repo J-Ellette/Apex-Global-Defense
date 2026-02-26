@@ -69,8 +69,8 @@ CREATE TABLE IF NOT EXISTS audit_log_archive (
     archived_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS ix_audit_log_archive_actor_id
-    ON audit_log_archive (actor_id);
+CREATE INDEX IF NOT EXISTS ix_audit_log_archive_user_id
+    ON audit_log_archive (user_id);
 
 CREATE INDEX IF NOT EXISTS ix_audit_log_archive_archived_at
     ON audit_log_archive (archived_at);
@@ -89,11 +89,11 @@ BEGIN
     INSERT INTO audit_log_archive
         SELECT *, NOW() AS archived_at
         FROM   audit_log
-        WHERE  occurred_at < v_cutoff;
+        WHERE  time < v_cutoff;
 
     GET DIAGNOSTICS v_count = ROW_COUNT;
 
-    DELETE FROM audit_log WHERE occurred_at < v_cutoff;
+    DELETE FROM audit_log WHERE time < v_cutoff;
 
     RETURN v_count;
 END;
@@ -117,6 +117,6 @@ CREATE OR REPLACE VIEW v_sim_events_all AS
 CREATE OR REPLACE VIEW v_audit_log_all AS
     SELECT *, FALSE AS is_archived FROM audit_log
     UNION ALL
-    SELECT id, actor_id, actor_role, action, resource_type, resource_id,
-           classification_level, detail, occurred_at, TRUE AS is_archived
+    SELECT id, time, user_id, session_id, action, resource_type, resource_id,
+        classification, ip_address, user_agent, payload, TRUE AS is_archived
     FROM   audit_log_archive;

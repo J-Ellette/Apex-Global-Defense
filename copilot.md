@@ -1428,3 +1428,42 @@ Complete `019_equipment_catalog_seed.sql` by adding the remaining planned equipm
 Next continuation items:
 - [ ] Optional hardening pass: normalize any multi-origin platform representations in `specs` (e.g., FRA/ITA, NOR/USA) if needed by downstream UI filters
 - [ ] Optional data quality pass: add targeted verification queries or lightweight seed consistency checks
+
+---
+
+## Session 22 — Event Archival Migration Fix + Full-Path Data Quality Validation (2026-02-26)
+
+### Objective
+
+Patch `016_event_archival.sql` so full migration initialization can complete cleanly, then rerun SQL sanity checks in the full migration path.
+
+### What I Did This Session
+
+- [x] **Patched archival migration schema mismatch** (`db/init/016_event_archival.sql`)
+  - Replaced invalid `audit_log_archive(actor_id)` index with `audit_log_archive(user_id)`
+  - Updated archival function predicate from `occurred_at` to `time`
+  - Updated delete predicate from `occurred_at` to `time`
+  - Corrected `v_audit_log_all` archive-side projection to match current `audit_log` columns
+
+- [x] **Validated full migration chain**
+  - Re-ran migration smoke check: pass (`SMOKE_EXIT_CODE=0`)
+  - Re-ran data quality checks in full `db/init` path with init-complete wait:
+    - Category counts present across all 7 equipment categories
+    - Duplicate `type_code` guard query returned 0 rows
+    - Missing `origin_country` reference query returned 0 rows
+
+- [x] **Reusable seed sanity script** (`scripts/db-seed-sanity.sql`)
+  - Three checks in a single file: equipment category counts, duplicate `type_code` guard, missing `origin_country` references
+  - Runnable with one command (no flags, no wrapper script needed):
+
+    ```bash
+    docker exec -i <postgres-container> psql -U agd -d agd_dev -v ON_ERROR_STOP=1 -f /dev/stdin < scripts/db-seed-sanity.sql
+    ```
+
+- [x] **Documentation update**
+  - `README.md` `## Database` section: added `scripts/db-seed-sanity.sql` description and single-command usage block above the migration file table
+  - `README.md` migration table entry for `016_event_archival.sql` updated to note alignment with `audit_log` column names (`user_id`, `time`)
+
+### Stopping Point
+
+`016_event_archival.sql` now applies cleanly in the full migration path, all data-quality checks pass end-to-end, and `scripts/db-seed-sanity.sql` provides a permanent single-command re-check.

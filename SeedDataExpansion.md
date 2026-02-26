@@ -117,13 +117,13 @@ Source data from IMF World Economic Outlook, World Bank, national statistics bur
 
 | Source | URL | Use |
 |--------|-----|-----|
-| OFAC Sanctions Programs | https://ofac.treasury.gov/sanctions-programs-and-country-information | Authoritative US sanctions list |
-| EU Sanctions Map | https://www.sanctionsmap.eu/ | EU restrictive measures by country |
-| UN Sanctions | https://www.un.org/securitycouncil/sanctions/information | UN Security Council sanctions regimes |
-| DLA Piper Sanctions Matrix | https://www.dlapiper.com/en-us/insights/publications/global-sanctions-alert/ | Cross-jurisdiction comparison |
-| IMF World Economic Outlook | https://www.imf.org/en/Publications/WEO | GDP, inflation, unemployment by country |
-| World Bank Open Data | https://data.worldbank.org/ | Trade, development indicators |
-| CNAS Sanctions Tracker | https://www.cnas.org/publications/reports/sanctions-by-the-numbers-2024-year-in-review | Annual sanctions analysis |
+| OFAC Sanctions Programs | <https://ofac.treasury.gov/sanctions-programs-and-country-information> | Authoritative US sanctions list |
+| EU Sanctions Map | <https://www.sanctionsmap.eu/> | EU restrictive measures by country |
+| UN Sanctions | <https://www.un.org/securitycouncil/sanctions/information> | UN Security Council sanctions regimes |
+| DLA Piper Sanctions Matrix | <https://www.dlapiper.com/en-us/insights/publications/global-sanctions-alert/> | Cross-jurisdiction comparison |
+| IMF World Economic Outlook | <https://www.imf.org/en/Publications/WEO> | GDP, inflation, unemployment by country |
+| World Bank Open Data | <https://data.worldbank.org/> | Trade, development indicators |
+| CNAS Sanctions Tracker | <https://www.cnas.org/publications/reports/sanctions-by-the-numbers-2024-year-in-review> | Annual sanctions analysis |
 
 ---
 
@@ -197,15 +197,15 @@ Source data from IMF World Economic Outlook, World Bank, national statistics bur
 
 | Source | URL | Use |
 |--------|-----|-----|
-| CFR Cyber Operations Tracker | https://www.cfr.org/cyber-operations/ | State-sponsored cyber + influence ops database |
-| MIT Cyber Operations Tracker | https://cyberir.mit.edu/site/cyber-operations-tracker/ | Academic attribution database |
-| EU DisinfoLab | https://www.disinfo.eu/ | European disinformation investigations |
-| Stanford Internet Observatory | https://cyber.fsi.stanford.edu/ | Academic research on information operations |
-| Graphika Reports | https://graphika.com/reports | Network analysis of influence operations |
-| Meta Adversarial Threat Reports | https://transparency.meta.com/en-gb/metasecurity/threat-reporting/ | Platform takedown reports with attribution |
-| Wikipedia: Disinformation by Country | https://en.wikipedia.org/wiki/List_of_disinformation_attacks_by_country | Comprehensive reference list |
-| NATO StratCom COE | https://stratcomcoe.org/ | NATO counter-disinformation research |
-| CISA Nation-State Threats | https://www.cisa.gov/topics/cyber-threats-and-advisories/nation-state-cyber-actors | US government threat advisories |
+| CFR Cyber Operations Tracker | <https://www.cfr.org/cyber-operations/> | State-sponsored cyber + influence ops database |
+| MIT Cyber Operations Tracker | <https://cyberir.mit.edu/site/cyber-operations-tracker/> | Academic attribution database |
+| EU DisinfoLab | <https://www.disinfo.eu/> | European disinformation investigations |
+| Stanford Internet Observatory | <https://cyber.fsi.stanford.edu/> | Academic research on information operations |
+| Graphika Reports | <https://graphika.com/reports> | Network analysis of influence operations |
+| Meta Adversarial Threat Reports | <https://transparency.meta.com/en-gb/metasecurity/threat-reporting/> | Platform takedown reports with attribution |
+| Wikipedia: Disinformation by Country | <https://en.wikipedia.org/wiki/List_of_disinformation_attacks_by_country> | Comprehensive reference list |
+| NATO StratCom COE | <https://stratcomcoe.org/> | NATO counter-disinformation research |
+| CISA Nation-State Threats | <https://www.cisa.gov/topics/cyber-threats-and-advisories/nation-state-cyber-actors> | US government threat advisories |
 
 ---
 
@@ -452,16 +452,16 @@ Source data from IMF World Economic Outlook, World Bank, national statistics bur
 
 | Source | URL | Access | Best For |
 |--------|-----|--------|----------|
-| Acuity Lab Military API | https://www.acuitylab.net/military | REST API (free) | Structured JSON specs — direct ingest |
-| ODIN (TRADOC) Worldwide Equipment Guide | https://odin.tradoc.army.mil/WEG | Web (request API) | Most authoritative threat equipment data |
-| GlobalMilitary.net | https://www.globalmilitary.net/ | Web | Country-level inventories, 450+ aircraft |
-| Military Periscope | https://www.militaryperiscope.com/ | Web (registration) | Comprehensive weapon system database |
-| SIPRI Arms Transfers DB | https://www.sipri.org/databases/armstransfers | CSV export | Who sold what to whom |
-| AFV Database | https://afvdatabase.com/ | Web | US armored vehicle detailed specs |
-| IISS Military Balance | https://www.iiss.org/publications/the-military-balance/ | Licensed (annual) | Gold standard OOB + equipment counts |
-| Jane's Defence | https://www.janes.com/ | Licensed | Platform specs, country-level inventories |
-| OpenAircraftType (GitHub) | https://github.com/atoff/OpenAircraftType | Open source | Aircraft type classification database |
-| DoD Public Data Listing | https://data.defense.gov/Public-Data-Listing/ | Public (JSON) | Official US defense datasets |
+| Acuity Lab Military API | <https://www.acuitylab.net/military> | REST API (free) | Structured JSON specs — direct ingest |
+| ODIN (TRADOC) Worldwide Equipment Guide | <https://odin.tradoc.army.mil/WEG> | Web (request API) | Most authoritative threat equipment data |
+| GlobalMilitary.net | <https://www.globalmilitary.net/> | Web | Country-level inventories, 450+ aircraft |
+| Military Periscope | <https://www.militaryperiscope.com/> | Web (registration) | Comprehensive weapon system database |
+| SIPRI Arms Transfers DB | <https://www.sipri.org/databases/armstransfers> | CSV export | Who sold what to whom |
+| AFV Database | <https://afvdatabase.com/> | Web | US armored vehicle detailed specs |
+| IISS Military Balance | <https://www.iiss.org/publications/the-military-balance/> | Licensed (annual) | Gold standard OOB + equipment counts |
+| Jane's Defence | <https://www.janes.com/> | Licensed | Platform specs, country-level inventories |
+| OpenAircraftType (GitHub) | <https://github.com/atoff/OpenAircraftType> | Open source | Aircraft type classification database |
+| DoD Public Data Listing | <https://data.defense.gov/Public-Data-Listing/> | Public (JSON) | Official US defense datasets |
 
 ---
 

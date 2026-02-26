@@ -65,7 +65,7 @@ INSERT INTO econ_trade_routes (
     id, origin_country, destination_country, commodity,
     annual_value_usd, dependency_level, is_disrupted, disruption_cause, classification
 ) VALUES
-    ('e1700000-1000-0000-0000-000000000001', 'CUB', 'EUR', 'sugar_tobacco', 800000000, 'MEDIUM', TRUE, 'US embargo restricts re-export pathways; limited EU trade access.', 'UNCLASS'),
+    ('e1700000-1000-0000-0000-000000000001', 'CUB', 'ESP', 'sugar_tobacco', 800000000, 'MEDIUM', TRUE, 'US embargo restricts re-export pathways; limited EU trade access.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000002', 'SYR', 'TUR', 'crude_oil', 2000000000, 'HIGH', TRUE, 'Civil war disruption, sanctions pressure, and pipeline constraints.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000003', 'MMR', 'CHN', 'natural_gas', 3500000000, 'HIGH', FALSE, NULL, 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000004', 'MMR', 'CHN', 'jade_gemstones', 15000000000, 'CRITICAL', FALSE, 'Largely unregulated revenue stream linked to military networks.', 'UNCLASS'),
@@ -73,8 +73,8 @@ INSERT INTO econ_trade_routes (
     ('e1700000-1000-0000-0000-000000000006', 'IRN', 'IND', 'crude_oil', 12000000000, 'HIGH', TRUE, 'US secondary sanctions create financing and insurance pressure.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000007', 'RUS', 'IND', 'crude_oil', 45000000000, 'HIGH', FALSE, 'Discounted bilateral oil trade expansion since 2022.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000008', 'RUS', 'CHN', 'crude_oil', 60000000000, 'HIGH', FALSE, 'Pipeline and seaborne exports via diversified delivery channels.', 'UNCLASS'),
-    ('e1700000-1000-0000-0000-000000000009', 'UKR', 'EUR', 'grain_cereals', 12000000000, 'HIGH', TRUE, 'Black Sea access instability and corridor negotiation risk.', 'UNCLASS'),
-    ('e1700000-1000-0000-0000-000000000010', 'LBY', 'EUR', 'crude_oil', 20000000000, 'MEDIUM', TRUE, 'Civil conflict and terminal outages disrupt export continuity.', 'UNCLASS'),
+    ('e1700000-1000-0000-0000-000000000009', 'UKR', 'POL', 'grain_cereals', 12000000000, 'HIGH', TRUE, 'Black Sea access instability and corridor negotiation risk.', 'UNCLASS'),
+    ('e1700000-1000-0000-0000-000000000010', 'LBY', 'ITA', 'crude_oil', 20000000000, 'MEDIUM', TRUE, 'Civil conflict and terminal outages disrupt export continuity.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000011', 'SDN', 'ARE', 'gold', 4500000000, 'HIGH', TRUE, 'Civil war fragmentation and smuggling network dependence.', 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000012', 'AFG', 'PAK', 'coal_minerals', 1400000000, 'MEDIUM', FALSE, NULL, 'UNCLASS'),
     ('e1700000-1000-0000-0000-000000000013', 'PRK', 'CHN', 'coal_iron_ore', 2000000000, 'CRITICAL', TRUE, 'UN sanctions and maritime interdiction pressure; smuggling persists.', 'UNCLASS'),
