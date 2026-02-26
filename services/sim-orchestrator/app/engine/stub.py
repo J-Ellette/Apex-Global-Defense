@@ -249,11 +249,33 @@ def generate_logistics_state(
 # Monte Carlo
 # ---------------------------------------------------------------------------
 
+def _wilson_ci_95(wins: int, n: int) -> tuple[float, float]:
+    """Compute the 95% Wilson score confidence interval for a proportion.
+
+    Returns (lower_pct, upper_pct) as percentages.
+    """
+    if n == 0:
+        return (0.0, 0.0)
+    z = 1.96  # z* for 95% two-sided interval
+    p = wins / n
+    center = (p + z * z / (2 * n)) / (1 + z * z / n)
+    margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    lo = max(0.0, round((center - margin) * 100, 1))
+    hi = min(100.0, round((center + margin) * 100, 1))
+    return (lo, hi)
+
+
 def run_monte_carlo(
     run_id: uuid.UUID,
     config: ScenarioConfig,
 ) -> MCResult:
-    """Run N independent simulations and return aggregate statistics."""
+    """Run N independent simulations and return aggregate statistics.
+
+    Each trial uses a deterministic seed (trial index) so results are
+    reproducible. Confidence intervals are computed via the Wilson score method.
+    TODO: replace the serial loop with a parallel executor once the engine
+    supports multiprocessing-safe execution contexts.
+    """
     n = config.monte_carlo_runs
     blue_wins = 0
     red_wins = 0
@@ -295,14 +317,16 @@ def run_monte_carlo(
 
     def _cas_dist(lst: list[int]) -> CasualtyDistribution:
         sorted_lst = sorted(lst)
+        mean = sum(lst) / len(lst)
         return CasualtyDistribution(
-            mean=int(sum(lst) / len(lst)),
-            std=int(math.sqrt(sum((x - sum(lst) / len(lst)) ** 2 for x in lst) / len(lst))),
+            mean=int(mean),
+            std=int(math.sqrt(sum((x - mean) ** 2 for x in lst) / len(lst))),
             p10=sorted_lst[int(len(sorted_lst) * 0.10)],
             p50=sorted_lst[int(len(sorted_lst) * 0.50)],
             p90=sorted_lst[int(len(sorted_lst) * 0.90)],
         )
 
+    dur_mean = sum(durations) / len(durations)
     return MCResult(
         runs_completed=n,
         objective_outcomes={
@@ -310,14 +334,12 @@ def run_monte_carlo(
                 blue_win_pct=_pct(blue_wins),
                 red_win_pct=_pct(red_wins),
                 contested_pct=_pct(contested),
-                mean_duration_hours=round(sum(durations) / len(durations), 1),
+                mean_duration_hours=round(dur_mean, 1),
                 std_duration_hours=round(
-                    math.sqrt(
-                        sum((d - sum(durations) / len(durations)) ** 2 for d in durations)
-                        / len(durations)
-                    ),
-                    1,
+                    math.sqrt(sum((d - dur_mean) ** 2 for d in durations) / len(durations)), 1
                 ),
+                blue_win_ci_95=_wilson_ci_95(blue_wins, n),
+                red_win_ci_95=_wilson_ci_95(red_wins, n),
             )
         },
         blue_casualties=_cas_dist(blue_cas_list),

@@ -423,7 +423,14 @@ Progress against [`improvements.md`](./improvements.md):
 
 | Priority | Area | Status |
 |----------|------|--------|
-| A | Simulation Engine Fidelity (combat state model, turn resolver, Monte Carlo, logistics, checkpointing) | ⏳ Future |
+| A | Simulation Engine Fidelity — stateful combat model (UnitState/ForceState, terrain/weather) | ✅ Complete |
+| A | Simulation Engine Fidelity — deterministic turn resolver + seeded RNG + tick loop | ✅ Complete |
+| A | Simulation Engine Fidelity — logistics graph (supply drain, resupply, readiness degradation) | ✅ Complete |
+| A | Simulation Engine Fidelity — persistent checkpointing (`GetCheckpoint` RPC, turn snapshots) | ✅ Complete |
+| A | Simulation Engine Fidelity — expanded gRPC contract (`ForceStatus`, `terrain_preset`, `seed`) | ✅ Complete |
+| A | Simulation Engine Fidelity — Monte Carlo confidence intervals (Wilson score 95% CI) | ✅ Complete |
+| A | Simulation Engine Fidelity — calibration harness (golden scenario tests, regression drift) | ✅ Complete |
+| A | Simulation Engine Fidelity — performance hardening, parallel MC executor | ⏳ Future |
 | B | CI/CD — fix stale service matrices in CI + Makefile | ✅ Complete |
 | B | CI/CD — `docker-compose.test.yml` integration test harness | ✅ Complete |
 | B | CI/CD — matrix-based multi-service image publishing | ✅ Complete |
@@ -431,12 +438,15 @@ Progress against [`improvements.md`](./improvements.md):
 | C | Runtime reliability — health endpoint surfaces engine mode (`grpc` vs `stub`) | ✅ Complete |
 | C | Runtime reliability — explicit fallback policy (dev: stub allowed, production: fail closed) | ✅ Complete |
 | C | Runtime reliability — migration smoke validation (`scripts/db-migrate-smoke.sh` + CI job) | ✅ Complete |
+| C | Data controls — retention/archival policy for `sim_events` and `audit_log` (`016_event_archival.sql`) | ✅ Complete |
 | D | Security — `.env.example` templates (root + frontend) | ✅ Complete |
 | D | Security — env-var-driven secrets in `docker-compose.dev.yml` | ✅ Complete |
 | D | Security — CI secret scanning (gitleaks) | ✅ Complete |
 | D | Security — artifact provenance/build attestation (CI `attest-build-provenance`) | ✅ Complete |
 | E | Architecture — shared Python package (`services/agd-shared/`) | ✅ Complete |
-| E | Architecture — SemVer contract governance, protobuf compat checks | ⏳ Future |
+| E | Architecture — SemVer contract governance (`docs/contract-governance.md`) | ✅ Complete |
+| E | Architecture — protobuf compatibility checks in CI (`buf lint` job) | ✅ Complete |
+| E | Architecture — canonical event schema governance (`docs/contract-governance.md` §3) | ✅ Complete |
 | F | Observability — OpenTelemetry, dashboards | ⏳ Future |
 | F | Observability — incident runbooks (DB init, gRPC outage, Kafka, JWT) | ✅ Complete |
 | G | Developer experience — service-scoped make targets (`svc-test`, `svc-lint`) | ✅ Complete |
@@ -505,6 +515,7 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `013_infoops_schema.sql` | Narrative threats, influence campaigns, disinformation indicators, attribution assessments |
 | `014_gis_export_schema.sql` | GIS integration configuration (ArcGIS, Google Earth, WMS/WFS) |
 | `015_training_schema.sql` | Training exercises, scripted injects, objectives with scoring |
+| `016_event_archival.sql` | Archival functions and archive tables for `sim_events` (90-day) and `audit_log` (180-day); union views `v_sim_events_all`, `v_audit_log_all` |
 
 ---
 

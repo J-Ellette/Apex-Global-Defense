@@ -1,0 +1,18 @@
+version: v1
+lint:
+  use:
+    - DEFAULT
+  except:
+    # Allow proto comments without full stop; engine protos are internal
+    - COMMENT_FIELD
+    - COMMENT_MESSAGE
+    - COMMENT_ENUM
+    - COMMENT_SERVICE
+    - COMMENT_RPC
+  ignore_only:
+    # Generated files are not linted
+    FIELD_LOWER_SNAKE_CASE:
+      - proto/sim_engine.proto
+breaking:
+  use:
+    - FILE

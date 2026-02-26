@@ -1137,3 +1137,117 @@ Continue working through `improvements.md`. Implement remaining actionable items
 ### Stopping Point
 
 Priority C (migration smoke), Priority D (artifact attestation), Priority E (shared package), and Priority G (docs-status matrix) are now implemented. Remaining future items: Priority A (sim engine fidelity program), Priority E (SemVer/protobuf compat), and Priority F (OpenTelemetry + dashboards).
+
+---
+
+## Session 17 — improvements.md Priority A + C + E (2026-02-26)
+
+### Objective
+
+Work through the remaining unimplemented items in `improvements.md`, focusing on
+Priority A (Simulation Engine Fidelity — the primary/highest-value priority),
+Priority C (data archival), and Priority E (contract governance).
+
+### What I Did This Session
+
+- [x] **Priority A — Sim Engine Fidelity: stateful combat model (Rust sim-engine)**
+  - Replaced random non-deterministic event generation with a seeded, stateful combat model
+  - Added `UnitState` struct (lat/lng position, strength, ammo, fuel)
+  - Added `ForceState` aggregating units + cumulative KIA/WIA/equipment losses/objectives held
+  - Added `CombatState` per run tracking blue and red forces
+  - Implemented deterministic turn resolver (`resolve_turn`):
+    - Supply drain per turn (weather-modulated: `WEATHER_MODS`)
+    - Force ratio combat resolution (attacker vs defender with terrain modifier: `TERRAIN_MODS`)
+    - Attrition applied to individual units proportional to casualties
+    - Equipment losses every 3 turns
+    - Airstrike events (~40% chance/turn)
+    - Resupply events (~30% chance/turn) with unit-level supply restoration
+    - Objective contesting (~25% chance per objective/turn)
+  - All event types now carry rich, typed payloads (blue_casualties, red_casualties, atk_score, outcome, side, resupply amounts, etc.)
+
+- [x] **Priority A — Sim Engine Fidelity: seeded RNG + deterministic replay**
+  - Replaced `rand::thread_rng()` with `rand::rngs::SmallRng::seed_from_u64()` (feature `small_rng` added to Cargo.toml)
+  - Per-run seed: use `ScenarioConfig.seed` if provided, otherwise derive deterministically from run_id hash
+  - Same seed always produces identical event sequence (verified by golden scenario tests)
+  - Added `seed` field (int64) and `terrain_preset` field to `ScenarioConfig` proto message
+
+- [x] **Priority A — Sim Engine Fidelity: persistent checkpointing + GetCheckpoint RPC**
+  - Added `snapshots: HashMap<turn, SimState>` to `RunRuntimeState`
+  - Snapshot captured after every turn in both `RunScenario` stream and `StepTurn`
+  - Added `GetCheckpoint(RunRef)` RPC: `turn=0` returns latest snapshot; `turn=N` returns snapshot for turn N
+  - Added `turn` field to `RunRef` proto message for checkpoint retrieval
+
+- [x] **Priority A — Sim Engine Fidelity: expanded gRPC contract**
+  - Added `ForceStatus` proto message (unit_count, strength_pct, total_kia, total_wia, supply_ammo/fuel/rations, equipment_losses_json, objectives_held)
+  - Enhanced `SimState` with `blue_force`/`red_force` ForceStatus fields (fields 9, 10)
+  - Added `snapshot` bytes field to `SimState` (field 11) containing JSON turn snapshot
+  - All changes are fully backward compatible (additive proto3 fields)
+  - Added contract version annotation comment to proto file (v1.3.0)
+
+- [x] **Priority A — Sim Engine Fidelity: logistics modeling**
+  - Per-unit supply drain per turn (`_BASE_DRAIN_PER_TURN = 6%`, weather-modulated)
+  - Resupply events restore ammo/fuel to individual units
+  - Supply-driven combat effectiveness: low-supply forces are less effective
+  - Equipment losses tracked per-side (armor, artillery, aircraft)
+
+- [x] **Priority A — Sim Engine Fidelity: MC confidence intervals**
+  - Added `blue_win_ci_95` / `red_win_ci_95` fields to `OutcomeDistribution` (Python model)
+  - Implemented 95% Wilson score confidence interval (`_wilson_ci_95`) in stub.py
+  - MC results now include statistically valid confidence intervals for win probabilities
+
+- [x] **Priority A — Sim Engine Fidelity: calibration harness (golden scenario tests)**
+  - Added `TestGoldenScenarioCalibration` test class to `services/sim-orchestrator/tests/test_runs.py`
+  - 6 golden scenario tests:
+    - `test_seeded_run_is_deterministic` — same seed → identical events
+    - `test_different_seeds_produce_different_events` — stochastic variation verified
+    - `test_golden_scenario_event_counts_in_band` — event count within expected bands
+    - `test_golden_scenario_casualty_in_band` — casualty counts within expected bands
+    - `test_mc_confidence_intervals_are_valid` — Wilson CI intervals are valid ranges
+    - `test_weather_preset_affects_outcomes` — storm weather increases blue casualties vs clear
+
+- [x] **Priority C — DB Retention/Archival**
+  - Created `db/init/016_event_archival.sql`
+  - `sim_events_archive` table (mirrors sim_events + archived_at)
+  - `audit_log_archive` table (mirrors audit_log + archived_at)
+  - `archive_old_sim_events(retain_days=90)` PL/pgSQL function: moves old rows to archive
+  - `archive_old_audit_log(retain_days=180)` PL/pgSQL function: moves old rows to archive
+  - `v_sim_events_all` and `v_audit_log_all` union views for forensic queries across live + archived data
+
+- [x] **Priority E — SemVer Contract Governance**
+  - Created `docs/contract-governance.md`:
+    - SemVer policy (major/minor/patch), current contract version table
+    - Compatibility window policy (90-day REST deprecation, 90-day gRPC breaking-change window)
+    - Breaking change procedure
+    - Canonical `sim.events` event schema with typed payload examples for all 11 event types
+    - Producer/consumer validation matrix
+    - Governance process for new event types
+    - Protobuf compatibility check instructions (`buf lint`, `buf breaking`)
+
+- [x] **Priority E — Protobuf Compatibility Checks in CI**
+  - Added `proto-lint` CI job to `.github/workflows/ci.yml`
+  - Uses `bufbuild/buf-setup-action@v1` + `buf lint` for style checks
+  - `buf breaking` runs on PRs to detect breaking changes vs main branch
+  - Created `services/sim-engine/buf.yaml` configuration
+  - Added `proto-lint` Makefile target
+
+- [x] **Bug fix — guard-services Makefile**
+  - Added `agd-shared` to the EXPECTED service list in Makefile `guard-services` target
+  - This was broken when `agd-shared` was added in Session 16 without updating the guard
+
+- [x] **README.md, improvements.md, copilot.md updated**
+  - improvements.md: All Priority A items marked ✅; Priority C archival marked ✅; all Priority E items marked ✅
+  - README.md: Improvements roadmap table updated with new ✅ rows; DB schema table updated with migration 016
+  - copilot.md: This session added
+
+### Stopping Point
+
+Priority A (Simulation Engine Fidelity — Milestone 1 complete: determinism, turn resolver,
+logistics, checkpointing, expanded gRPC, calibration harness, MC confidence intervals),
+Priority C (DB archival), and Priority E (contract governance, buf lint CI) are all implemented.
+
+Remaining future items:
+- Priority A performance hardening (profiling, parallel MC executor) — ⏳ Future
+- Priority C — DB dev-fallback documentation (TimescaleDB/pgvector)
+- Priority D — RLS classification tier testing
+- Priority F — OpenTelemetry traces and correlation IDs
+- Priority F — Observability dashboards

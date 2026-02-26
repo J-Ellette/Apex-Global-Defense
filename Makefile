@@ -131,7 +131,7 @@ svc-lint:
 guard-services:
 	@echo "Checking service list consistency..."
 	@ACTUAL=$$(ls services/ | sort | tr '\n' ' ' | sed 's/ *$$//'); \
-	EXPECTED="asym-svc auth-svc cbrn-svc civilian-svc collab-svc cyber-svc econ-svc gis-export-svc infoops-svc intel-svc oob-svc reporting-svc sim-engine sim-orchestrator terror-svc training-svc"; \
+	EXPECTED="agd-shared asym-svc auth-svc cbrn-svc civilian-svc collab-svc cyber-svc econ-svc gis-export-svc infoops-svc intel-svc oob-svc reporting-svc sim-engine sim-orchestrator terror-svc training-svc"; \
 	if [ "$$ACTUAL" != "$$EXPECTED" ]; then \
 		echo "ERROR: services/ directory contents do not match expected list."; \
 		echo "  Actual:   $$ACTUAL"; \
@@ -155,6 +155,10 @@ migrate-smoke:
 ## security-scan: Run Trivy security scan
 security-scan:
 	trivy fs --exit-code 1 --severity HIGH,CRITICAL .
+
+## proto-lint: Lint protobuf files with buf
+proto-lint:
+	cd services/sim-engine && buf lint proto/
 
 ## sbom: Generate SBOM
 sbom:
