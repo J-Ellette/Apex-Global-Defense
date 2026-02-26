@@ -1329,3 +1329,102 @@ All items from the problem statement are now implemented:
 - ✅ Priority F — Observability dashboards
 
 The improvements.md has no remaining open items.
+
+---
+
+## Session 19 — Seed Data Expansion Start (2026-02-25)
+
+### Objective
+
+Start implementation from `SeedDataExpansion.md` and keep project docs in sync while progressing.
+
+### What I Did This Session
+
+- [x] **Economic expansion migration** (`db/init/017_econ_seed_expansion.sql`)
+  - Added country backfill entries required for expanded econ seed coverage (idempotent `ON CONFLICT (code) DO NOTHING`)
+  - Added 19 sanction target inserts using deterministic UUIDs and `ON CONFLICT (id) DO NOTHING`
+  - Added 15 expanded trade route inserts using deterministic UUIDs
+  - Added 25 expanded economic indicator rows using deterministic UUIDs
+
+- [x] **InfoOps expansion migration** (`db/init/018_infoops_seed_expansion.sql`)
+  - Added 12 narrative threat rows
+  - Added 8 influence campaign rows
+  - Added 12 disinformation indicator rows
+  - Added 5 attribution assessment rows
+  - All inserts use deterministic UUIDs with `ON CONFLICT (id) DO NOTHING` for idempotent reruns
+
+- [x] **Markdown lint fix** (`SeedDataExpansion.md`)
+  - Resolved MD024 duplicate heading issue by renaming repeated `### Current State` headings to section-specific titles
+
+- [x] **Documentation updates**
+  - `README.md` updated to reflect expanded econ/infoops seed coverage
+  - Database initialization table updated with `017_econ_seed_expansion.sql` and `018_infoops_seed_expansion.sql`
+
+### Stopping Point
+
+Seed expansion implementation has started with `017` and `018` completed and documented.
+
+Next continuation item:
+- [ ] `db/init/019_equipment_catalog_seed.sql` (equipment catalog bulk seed from `SeedDataExpansion.md`)
+
+---
+
+## Session 20 — Equipment Catalog Seed Expansion (2026-02-25)
+
+### Objective
+
+Continue `SeedDataExpansion.md` implementation by starting the equipment catalog bulk migration while keeping docs current.
+
+### What I Did This Session
+
+- [x] **Created equipment seed migration** (`db/init/019_equipment_catalog_seed.sql`)
+  - Added phase-1 bulk seed to `equipment_catalog` with idempotent `ON CONFLICT (type_code) DO NOTHING`
+  - Seeded **53 entries** across:
+    - ARMOR (Main Battle Tanks)
+    - IFV/APC
+    - AIRCRAFT (fighter + attack)
+  - Added per-row JSONB `specs` payloads aligned to category templates in `SeedDataExpansion.md`
+
+- [x] **Documentation updates**
+  - `README.md` updated with `019_equipment_catalog_seed.sql` in the DB initialization table
+  - Added Equipment Catalog Seed Expansion status note under Phase 4 new features
+
+### Stopping Point
+
+Equipment migration is started and validated as a clean next-step chunk.
+
+Next continuation items:
+- [ ] Extend `019_equipment_catalog_seed.sql` with remaining categories from `SeedDataExpansion.md`:
+  - HELICOPTER
+  - NAVAL
+  - MISSILE
+  - ARTILLERY
+
+---
+
+## Session 21 — Equipment Catalog Seed Expansion Completion (2026-02-26)
+
+### Objective
+
+Complete `019_equipment_catalog_seed.sql` by adding the remaining planned equipment categories.
+
+### What I Did This Session
+
+- [x] **Extended equipment seed migration** (`db/init/019_equipment_catalog_seed.sql`)
+  - Added HELICOPTER category entries
+  - Added NAVAL category entries
+  - Added MISSILE category entries
+  - Added ARTILLERY category entries
+  - Preserved idempotent behavior with `ON CONFLICT (type_code) DO NOTHING` per block
+
+- [x] **Documentation updates**
+  - `README.md` updated to reflect full category coverage in `019_equipment_catalog_seed.sql`
+  - DB initialization table description for migration `019` updated accordingly
+
+### Stopping Point
+
+`019_equipment_catalog_seed.sql` now includes all 7 planned categories from `SeedDataExpansion.md`.
+
+Next continuation items:
+- [ ] Optional hardening pass: normalize any multi-origin platform representations in `specs` (e.g., FRA/ITA, NOR/USA) if needed by downstream UI filters
+- [ ] Optional data quality pass: add targeted verification queries or lightweight seed consistency checks

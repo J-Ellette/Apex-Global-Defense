@@ -477,7 +477,7 @@ Progress against [`improvements.md`](./improvements.md):
 - Trade route disruption modeling (origin→destination, commodity, dependency level)
 - Economic indicators database (GDP, inflation, unemployment per country/year)
 - Deterministic economic impact assessment engine (GDP impact, inflation change, currency devaluation, trade volume reduction, severity rating)
-- 5-nation seed data: Russia, Iran, North Korea, Belarus, Venezuela
+- Expanded seed data via `017_econ_seed_expansion.sql`: added sanction targets, disrupted trade routes, and indicator coverage for additional sanctioned/high-risk states
 
 #### Information Operations (`infoops-svc`, port 8094)
 - Narrative threat tracking (spread velocity, reach estimate, platform coverage, key claims)
@@ -485,7 +485,7 @@ Progress against [`improvements.md`](./improvements.md):
 - Disinformation indicator catalog (8 indicator types: bot networks, deepfakes, astroturfing, etc.)
 - Attribution assessment engine (evidence-based attribution scoring)
 - Deterministic narrative analysis (spread score, virality index, counter-effectiveness, recommended actions)
-- Seed data: Russia/China influence operations with real campaign analogs
+- Expanded seed data via `018_infoops_seed_expansion.sql`: additional narratives, campaigns, indicators, and attribution assessments across a broader actor set
 
 #### GIS Export & External Integration (`gis-export-svc`, port 8095)
 - GeoJSON and KML export for all geospatial layers (units, CBRN, intel, civilian, terror, etc.)
@@ -501,6 +501,10 @@ Progress against [`improvements.md`](./improvements.md):
 - Objective tracking with type (DECISION, REPORT, ACTION, COMMUNICATION, ASSESSMENT)
 - Deterministic scoring engine: weighted objectives, grade calculation (A–F), timeliness/accuracy/communication sub-scores
 - Seed data: entry exercise and CBRN drill with injects and scored objectives
+
+#### Equipment Catalog Seed Expansion
+- Equipment catalog bulk seed added via `019_equipment_catalog_seed.sql`
+- Includes ARMOR, IFV/APC, AIRCRAFT, HELICOPTER, NAVAL, MISSILE, and ARTILLERY baseline entries used by simulation and OOB workflows
 
 ---
 
@@ -526,6 +530,9 @@ All schema initialization scripts are in `db/init/` and run automatically on fir
 | `014_gis_export_schema.sql` | GIS integration configuration (ArcGIS, Google Earth, WMS/WFS) |
 | `015_training_schema.sql` | Training exercises, scripted injects, objectives with scoring |
 | `016_event_archival.sql` | Archival functions and archive tables for `sim_events` (90-day) and `audit_log` (180-day); union views `v_sim_events_all`, `v_audit_log_all` |
+| `017_econ_seed_expansion.sql` | Economic seed expansion: country backfill, additional sanction targets, trade routes, and indicators |
+| `018_infoops_seed_expansion.sql` | InfoOps seed expansion: additional narrative threats, influence campaigns, disinformation indicators, and attribution assessments |
+| `019_equipment_catalog_seed.sql` | Equipment catalog expansion: ARMOR, IFV/APC, AIRCRAFT, HELICOPTER, NAVAL, MISSILE, and ARTILLERY entries with JSONB specs |
 
 ---
 

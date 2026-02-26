@@ -14,7 +14,7 @@ All data is **UNCLASSIFIED / open-source**. No schema changes are required — a
 
 ## 1. Economic Warfare Seed Expansion
 
-### Current State
+### Economic Module Current State
 
 - **`012_econ_schema.sql`** seeds 5 sanctioned nations: Russia, Iran, North Korea, Belarus, Venezuela
 - 5 trade routes, 10 economic indicators
@@ -129,7 +129,7 @@ Source data from IMF World Economic Outlook, World Bank, national statistics bur
 
 ## 2. Information Operations Seed Expansion
 
-### Current State
+### InfoOps Module Current State
 
 - **`013_infoops_schema.sql`** seeds 2 state actors: Russia (2 narratives, 1 campaign), China (1 narrative, 1 campaign)
 - 3 disinformation indicators, 0 attribution assessments
@@ -211,7 +211,7 @@ Source data from IMF World Economic Outlook, World Bank, national statistics bur
 
 ## 3. Equipment Catalog Seed Data
 
-### Current State
+### Equipment Module Current State
 
 - `equipment_catalog` table exists in schema (`buildsheet.md` §5.1) but has no seed data in any migration file
 - `equipment` table links unit inventories to catalog entries via `type_code`
