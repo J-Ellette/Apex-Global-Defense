@@ -10,3 +10,11 @@ grpcio==1.74.0
 protobuf==6.31.1
 pytest==8.2.0
 pytest-asyncio==0.23.6
+opentelemetry-api==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-instrumentation-fastapi==0.46b0
+prometheus-fastapi-instrumentator==7.0.0
+# Optional: install opentelemetry-exporter-otlp-proto-http to ship traces to an
+# OTLP-compatible collector (Jaeger, Grafana Tempo, etc.).  Requires a protobuf
+# version compatible with both the exporter (<5.0) and sim_engine_pb2 (>=5.26);
+# pin manually when upgrading: opentelemetry-exporter-otlp-proto-http==1.25.0

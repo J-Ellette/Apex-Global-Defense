@@ -297,3 +297,43 @@ class TestGoldenScenarioCalibration:
             f"Storm blue casualties ({cas_storm}) should be >= clear casualties "
             f"({cas_clear}). Weather modifier may not be applied correctly."
         )
+
+    def test_parallel_mc_matches_serial_output(self):
+        """Parallel MC executor (n >= threshold) must return same aggregate
+        win totals as serial execution for the same set of seeds.
+
+        This validates that ProcessPoolExecutor does not alter per-trial
+        determinism and that aggregation is correct.
+        """
+        from app.engine.stub import (  # noqa: PLC0415
+            _MC_PARALLEL_THRESHOLD,
+            _mc_trial,
+            run_monte_carlo,
+        )
+
+        run_id = uuid4()
+        # Use n == threshold (minimum valid value) to exercise the parallel path
+        n = _MC_PARALLEL_THRESHOLD
+        config = self._make_config(monte_carlo_runs=n, duration_hours=24)
+        config_dict = config.model_dump(mode="json")
+
+        # Serial reference — count wins directly from per-trial dicts
+        serial_results = [_mc_trial((run_id, config_dict, i)) for i in range(n)]
+        serial_blue_wins = sum(1 for r in serial_results if r["blue_obj"] > r["red_obj"])
+        serial_red_wins = sum(1 for r in serial_results if r["red_obj"] > r["blue_obj"])
+        # Compute expected percentages using the same rounding as run_monte_carlo
+        expected_blue_pct = round(serial_blue_wins / n * 100, 1)
+        expected_red_pct = round(serial_red_wins / n * 100, 1)
+
+        # Parallel execution via run_monte_carlo (exercises ProcessPoolExecutor path)
+        mc = run_monte_carlo(run_id, config)
+        outcome = mc.objective_outcomes["primary"]
+
+        assert outcome.blue_win_pct == expected_blue_pct, (
+            f"Parallel MC blue_win_pct={outcome.blue_win_pct} != serial={expected_blue_pct}; "
+            "parallel executor may have introduced non-determinism."
+        )
+        assert outcome.red_win_pct == expected_red_pct, (
+            f"Parallel MC red_win_pct={outcome.red_win_pct} != serial={expected_red_pct}"
+        )
+        assert mc.runs_completed == n

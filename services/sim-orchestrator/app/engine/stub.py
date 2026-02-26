@@ -8,8 +8,11 @@ available it will replace these stubs.
 from __future__ import annotations
 
 import math
+import os
 import random
+import time
 import uuid
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 
 from app.models import (
@@ -249,6 +252,13 @@ def generate_logistics_state(
 # Monte Carlo
 # ---------------------------------------------------------------------------
 
+# Minimum trials before we spin up a process pool (avoid overhead for tiny n).
+# Must be >= the ScenarioConfig.monte_carlo_runs minimum (10).
+_MC_PARALLEL_THRESHOLD = 10
+# Maximum worker processes (cap at CPU count to avoid oversubscription)
+_MC_MAX_WORKERS = max(1, min(4, os.cpu_count() or 1))
+
+
 def _wilson_ci_95(wins: int, n: int) -> tuple[float, float]:
     """Compute the 95% Wilson score confidence interval for a proportion.
 
@@ -265,6 +275,44 @@ def _wilson_ci_95(wins: int, n: int) -> tuple[float, float]:
     return (lo, hi)
 
 
+def _mc_trial(args: tuple[uuid.UUID, object, int]) -> dict:
+    """Single Monte Carlo trial — runs in a worker process.
+
+    Returns a plain dict so it crosses the process boundary via pickle
+    without importing Pydantic models in every worker.
+    """
+    run_id, config_dict, trial_index = args
+    # Re-hydrate config inside the worker to avoid Pydantic cross-process issues
+    from app.models import ScenarioConfig  # noqa: PLC0415 (local import for worker)
+    config = ScenarioConfig(**config_dict)
+
+    rng = random.Random(trial_index)
+    events = generate_run_events(run_id, config, seed=trial_index)
+    duration = config.duration_hours * rng.uniform(0.5, 1.2)
+
+    from app.models import EventType  # noqa: PLC0415
+    blue_cas = sum(
+        e.payload.get("blue_casualties", 0)
+        for e in events
+        if e.event_type in (EventType.CASUALTY, EventType.ENGAGEMENT)
+    )
+    red_cas = sum(
+        e.payload.get("red_casualties", 0)
+        for e in events
+        if e.event_type in (EventType.CASUALTY, EventType.ENGAGEMENT)
+    )
+    obj_events = [e for e in events if e.event_type == EventType.OBJECTIVE_CAPTURED]
+    blue_obj = sum(1 for e in obj_events if e.payload.get("side") == "BLUE")
+    red_obj = sum(1 for e in obj_events if e.payload.get("side") == "RED")
+    return {
+        "duration": duration,
+        "blue_cas": blue_cas,
+        "red_cas": red_cas,
+        "blue_obj": blue_obj,
+        "red_obj": red_obj,
+    }
+
+
 def run_monte_carlo(
     run_id: uuid.UUID,
     config: ScenarioConfig,
@@ -272,45 +320,54 @@ def run_monte_carlo(
     """Run N independent simulations and return aggregate statistics.
 
     Each trial uses a deterministic seed (trial index) so results are
-    reproducible. Confidence intervals are computed via the Wilson score method.
-    TODO: replace the serial loop with a parallel executor once the engine
-    supports multiprocessing-safe execution contexts.
+    reproducible.  Confidence intervals are computed via the Wilson score method.
+
+    Trials are executed in parallel using ProcessPoolExecutor when N ≥
+    _MC_PARALLEL_THRESHOLD, falling back to a serial loop for small runs
+    (avoids process-spawn overhead that exceeds computation cost).
     """
     n = config.monte_carlo_runs
+    t0 = time.monotonic()
+
+    # Serialize config for worker-process pickle boundary
+    config_dict = config.model_dump(mode="json")
+    trial_args = [(run_id, config_dict, i) for i in range(n)]
+
+    if n >= _MC_PARALLEL_THRESHOLD:
+        workers = min(_MC_MAX_WORKERS, n)
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            results = list(executor.map(_mc_trial, trial_args))
+    else:
+        results = [_mc_trial(a) for a in trial_args]
+
+    elapsed_ms = round((time.monotonic() - t0) * 1000, 1)
+
     blue_wins = 0
     red_wins = 0
     durations: list[float] = []
     blue_cas_list: list[int] = []
     red_cas_list: list[int] = []
 
-    for i in range(n):
-        rng = random.Random(i)
-        events = generate_run_events(run_id, config, seed=i)
-        duration = config.duration_hours * rng.uniform(0.5, 1.2)
-        durations.append(duration)
-
-        blue_cas = sum(
-            e.payload.get("blue_casualties", 0)
-            for e in events
-            if e.event_type in (EventType.CASUALTY, EventType.ENGAGEMENT)
-        )
-        red_cas = sum(
-            e.payload.get("red_casualties", 0)
-            for e in events
-            if e.event_type in (EventType.CASUALTY, EventType.ENGAGEMENT)
-        )
-        blue_cas_list.append(blue_cas)
-        red_cas_list.append(red_cas)
-
-        obj_events = [e for e in events if e.event_type == EventType.OBJECTIVE_CAPTURED]
-        blue_obj = sum(1 for e in obj_events if e.payload.get("side") == "BLUE")
-        red_obj = sum(1 for e in obj_events if e.payload.get("side") == "RED")
-        if blue_obj > red_obj:
+    for r in results:
+        durations.append(r["duration"])
+        blue_cas_list.append(r["blue_cas"])
+        red_cas_list.append(r["red_cas"])
+        if r["blue_obj"] > r["red_obj"]:
             blue_wins += 1
-        elif red_obj > blue_obj:
+        elif r["red_obj"] > r["blue_obj"]:
             red_wins += 1
 
     contested = n - blue_wins - red_wins
+
+    import logging  # noqa: PLC0415
+    logging.getLogger("sim-orchestrator.mc").info(
+        "MC run complete: n=%d, workers=%d, elapsed_ms=%.1f, blue_wins=%d, red_wins=%d",
+        n,
+        min(_MC_MAX_WORKERS, n) if n >= _MC_PARALLEL_THRESHOLD else 1,
+        elapsed_ms,
+        blue_wins,
+        red_wins,
+    )
 
     def _pct(x: int) -> float:
         return round(x / n * 100, 1)

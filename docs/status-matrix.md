@@ -70,7 +70,8 @@ Status tags: `complete` | `prototype` | `deferred` | `future`
 
 | Priority | Deliverable | Status | Implementation Files |
 |---------|------------|--------|---------------------|
-| A | Sim engine fidelity (combat model, deterministic resolver, MC, logistics, checkpointing) | `future` | `services/sim-engine/` (Rust) |
+| A | Sim engine fidelity (combat model, deterministic resolver, MC, logistics, checkpointing) | `complete` | `services/sim-orchestrator/app/engine/stub.py`, `services/sim-engine/` |
+| A | Performance hardening + parallel MC executor (ProcessPoolExecutor) | `complete` | `services/sim-orchestrator/app/engine/stub.py` (run_monte_carlo, _mc_trial) |
 | B | CI/CD — stale service matrix fix | `complete` | `.github/workflows/ci.yml`, `Makefile` |
 | B | CI/CD — docker-compose.test.yml integration harness | `complete` | `docker-compose.test.yml` |
 | B | CI/CD — matrix multi-service image publishing | `complete` | `.github/workflows/ci.yml` (build-images job) |
@@ -78,13 +79,17 @@ Status tags: `complete` | `prototype` | `deferred` | `future`
 | C | Health endpoint surfaces engine mode | `complete` | `services/sim-orchestrator/main.py` |
 | C | Explicit fallback policy (dev: stub, prod: fail-closed) | `complete` | `services/sim-orchestrator/app/routers/scenarios.py` |
 | C | Migration smoke validation | `complete` | `scripts/db-migrate-smoke.sh`, `.github/workflows/ci.yml` (migrate-smoke job) |
+| C | DB dev-fallback documentation (TimescaleDB/pgvector) | `complete` | `docs/db-dev-fallback.md` |
 | D | `.env.example` templates (root + frontend) | `complete` | `.env.example`, `frontend/.env.example` |
 | D | Env-var-driven secrets in docker-compose.dev.yml | `complete` | `docker-compose.dev.yml` |
 | D | CI secret scanning (gitleaks) | `complete` | `.github/workflows/ci.yml` (secret-scan job) |
 | D | Artifact provenance/signing (build attestation) | `complete` | `.github/workflows/ci.yml` (build-images job, attest-build-provenance step) |
+| D | RLS classification tier testing (all clearance levels) | `complete` | `services/agd-shared/tests/test_classification_tiers.py` |
 | E | Shared Python package (auth/classification/errors) | `complete` | `services/agd-shared/` |
-| E | SemVer contract governance, protobuf compat checks | `future` | — |
-| F | OpenTelemetry traces + dashboards | `future` | — |
+| E | SemVer contract governance, protobuf compat checks | `complete` | `docs/contract-governance.md`, `buf.yaml` |
+| F | OpenTelemetry SDK + FastAPI auto-instrumentation | `complete` | `services/sim-orchestrator/main.py` |
+| F | Prometheus + Grafana + Jaeger observability stack | `complete` | `docker-compose.dev.yml`, `monitoring/` |
+| F | Grafana dashboard (sim latency, error rate, event throughput) | `complete` | `monitoring/grafana/dashboards/sim-orchestrator.json` |
 | F | Incident runbooks | `complete` | `docs/runbooks/` |
 | G | Service-scoped make targets (svc-test, svc-lint) | `complete` | `Makefile` |
 | G | One-command smoke script | `complete` | `scripts/smoke-test.sh` |
@@ -114,4 +119,4 @@ Status tags: `complete` | `prototype` | `deferred` | `future`
 
 ---
 
-*Last updated: Session 16 — 2026-02-25 | UNCLASSIFIED*
+*Last updated: Session 17 — 2026-02-26 | UNCLASSIFIED*

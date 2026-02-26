@@ -16,5 +16,10 @@ class Settings(BaseSettings):
     env: str = "development"
     cors_origins: list[str] = ["*"]
 
+    # OpenTelemetry — set OTEL_EXPORTER_OTLP_ENDPOINT to enable OTLP export.
+    # Leave empty to use the console (stdout) exporter in dev.
+    otel_service_name: str = "sim-orchestrator"
+    otel_exporter_otlp_endpoint: str = ""
+
 
 settings = Settings()

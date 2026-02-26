@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: sim-orchestrator
+    static_configs:
+      - targets: ["sim-orchestrator:8085"]
+    metrics_path: /metrics
+
+  - job_name: auth-svc
+    static_configs:
+      - targets: ["auth-svc:8082"]
+    metrics_path: /metrics
+
+  - job_name: oob-svc
+    static_configs:
+      - targets: ["oob-svc:8083"]
+    metrics_path: /metrics
+
+  - job_name: cyber-svc
+    static_configs:
+      - targets: ["cyber-svc:8086"]
+    metrics_path: /metrics
+
+  - job_name: cbrn-svc
+    static_configs:
+      - targets: ["cbrn-svc:8087"]
+    metrics_path: /metrics
+
+  - job_name: intel-svc
+    static_configs:
+      - targets: ["intel-svc:8090"]
+    metrics_path: /metrics

@@ -1,0 +1,174 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "AGD Simulation Orchestrator — HTTP latency, Monte Carlo throughput, error rate, event throughput, and queue lag. Metrics produced by prometheus-fastapi-instrumentator: http_requests_total{handler,status,method}, http_request_duration_seconds{handler,method}.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"sim-orchestrator\"}[1m])) by (handler)",
+          "legendFormat": "{{handler}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 2,
+      "title": "P95 Request Latency (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"sim-orchestrator\"}[5m])) by (handler, le))",
+          "legendFormat": "p95 {{handler}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"sim-orchestrator\"}[5m])) by (handler, le))",
+          "legendFormat": "p50 {{handler}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "HTTP Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(http_requests_total{job=\"sim-orchestrator\",status=~\"5..\"}[1m])) / sum(rate(http_requests_total{job=\"sim-orchestrator\"}[1m]))",
+          "legendFormat": "error %",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100 },
+        "overrides": []
+      },
+      "options": {
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 5 }
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Active Simulation Runs",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"sim-orchestrator\", handler=~\"/api/v1/scenarios/.*/runs\", method=\"POST\", status=\"201\"}[24h]))",
+          "legendFormat": "runs started (24h)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "thresholds" } },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto" }
+    },
+    {
+      "id": 5,
+      "title": "Run Success vs Error (24h)",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"sim-orchestrator\", handler=~\"/api/v1/scenarios/.*/runs\", status=\"201\"}[24h]))",
+          "legendFormat": "Success",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(http_requests_total{job=\"sim-orchestrator\", handler=~\"/api/v1/scenarios/.*/runs\", status=~\"5..\"}[24h]))",
+          "legendFormat": "Error",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "Simulation Event Throughput (events/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"sim-orchestrator\", handler=~\"/api/v1/runs/.*/step\", status=\"200\"}[1m]))",
+          "legendFormat": "step events/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops" },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "title": "GET /runs/{id}/events Latency P95 (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"sim-orchestrator\", handler=~\"/api/v1/runs/.*/events\"}[5m])) by (le))",
+          "legendFormat": "p95 events endpoint",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["agd", "simulation", "sim-orchestrator"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "AGD — Simulation Orchestrator",
+  "uid": "agd-sim-orchestrator",
+  "version": 1
+}
