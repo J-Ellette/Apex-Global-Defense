@@ -290,3 +290,27 @@ jobs:
         with:
           name: sbom
           path: sbom.json
+
+  proto-lint:
+    name: Proto Lint & Compatibility Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history so buf breaking can compare against main
+          fetch-depth: 0
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Lint proto files
+        working-directory: services/sim-engine
+        run: buf lint proto/
+
+      - name: Check for breaking changes against main
+        # Only run on PRs targeting main; pushes to main are the baseline
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        working-directory: services/sim-engine
+        run: buf breaking --against '.git#branch=main' proto/

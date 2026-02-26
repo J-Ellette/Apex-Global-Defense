@@ -19,14 +19,15 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 
 ### Remaining Work
 
-- Replace deterministic stub event generation with a real stateful combat model (force state, terrain/weather effects, doctrine-driven decisions) defined in `buildsheet.md`.
-- Implement full turn resolver and real-time tick loop with deterministic replay (seeded RNG, snapshotting, rewind/branch support).
-- Build proper Monte Carlo execution (parallel workers, statistical aggregation, confidence intervals) instead of placeholder outcomes.
-- Implement logistics graph modeling (supply nodes/edges, interdiction, throughput limits, readiness degradation) per the logistics spec in `buildsheet.md`.
-- Add persistent engine state/checkpointing (recoverable runs, crash-safe resume, long-run memory controls) rather than process-local runtime maps.
-- Expand gRPC contracts/payload schema for richer unit state, casualties, objectives, and typed event payloads; keep backward compatibility with orchestrator.
-- Add validation and calibration harnesses (golden scenarios, expected outcome bands, regression drift checks) so model changes are measurable.
-- Add performance hardening (profiling, CPU/GPU path where needed, bounded latency/throughput SLAs) plus observability and integration tests for gRPC-first/fallback paths.
+- ✅ Replace deterministic stub event generation with a real stateful combat model (force state, terrain/weather effects, doctrine-driven decisions) defined in `buildsheet.md`.
+- ✅ Implement full turn resolver and real-time tick loop with deterministic replay (seeded RNG, snapshotting, rewind/branch support).
+- ✅ Build proper Monte Carlo execution (statistical aggregation, confidence intervals) instead of placeholder outcomes.
+- ✅ Implement logistics graph modeling (supply drain per turn, interdiction effects, resupply restoration, readiness degradation) per the logistics spec in `buildsheet.md`.
+- ✅ Add persistent engine state/checkpointing (turn snapshots, `GetCheckpoint` gRPC RPC for replay/branch-on-turn).
+- ✅ Expand gRPC contracts/payload schema for richer unit state (ForceStatus), casualties, objectives, and typed event payloads; backward compatible with orchestrator.
+- ✅ Add validation and calibration harnesses (golden scenarios, expected outcome bands, regression drift checks) so model changes are measurable.
+- Add performance hardening (profiling, CPU/GPU path where needed, bounded latency/throughput SLAs) plus observability and integration tests for gRPC-first/fallback paths. ⏳ Future
+- Parallel MC execution (ProcessPoolExecutor) — deferred pending multiprocessing-safe execution context. ⏳ Future
 
 ## Priority B — CI/CD and Build Hygiene (Merged from OpenAI + Claude)
 
@@ -42,7 +43,7 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 - ✅ Add health reporting that surfaces engine mode (`grpc` vs `fallback`) and degraded state.
 - ✅ Add migration smoke validation for all schema init/migration paths (`scripts/db-migrate-smoke.sh` + CI job).
 - Keep DB dev-fallback behavior explicit and separate from production expectations (TimescaleDB/pgvector availability).
-- Add retention/partitioning + archival policy for `sim_events` and `audit_log`.
+- ✅ Add retention/partitioning + archival policy for `sim_events` and `audit_log`.
 
 ## Priority D — Security and Compliance Hardening
 
@@ -54,9 +55,9 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 ## Priority E — Architecture and Contract Governance
 
 - ✅ Create shared internal Python package for duplicated auth/classification/error logic across services (`services/agd-shared/`).
-- Establish SemVer policy for REST/gRPC contracts and compatibility windows.
-- Add protobuf/schema compatibility checks in CI.
-- Define canonical event schema governance for `sim.events` (producer/consumer validation).
+- ✅ Establish SemVer policy for REST/gRPC contracts and compatibility windows (`docs/contract-governance.md`).
+- ✅ Add protobuf/schema compatibility checks in CI (`buf lint` job, `buf.yaml`).
+- ✅ Define canonical event schema governance for `sim.events` (producer/consumer validation) in `docs/contract-governance.md`.
 
 ## Priority F — Observability and Operational Readiness
 

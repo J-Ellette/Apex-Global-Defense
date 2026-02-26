@@ -83,6 +83,9 @@ class OutcomeDistribution(BaseModel):
     contested_pct: float
     mean_duration_hours: float
     std_duration_hours: float
+    # 95% Wilson score confidence intervals for win percentages
+    blue_win_ci_95: tuple[float, float] = (0.0, 0.0)
+    red_win_ci_95: tuple[float, float] = (0.0, 0.0)
 
 
 class CasualtyDistribution(BaseModel):
