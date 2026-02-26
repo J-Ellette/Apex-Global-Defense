@@ -1251,3 +1251,81 @@ Remaining future items:
 - Priority D — RLS classification tier testing
 - Priority F — OpenTelemetry traces and correlation IDs
 - Priority F — Observability dashboards
+
+---
+
+## Session 18 — Performance Hardening, Observability, RLS Tests, DB Fallback Docs (2026-02-26)
+
+### Goal
+
+Implement remaining deferred items from improvements.md:
+- Priority A — Performance hardening + parallel MC executor
+- Priority C — DB dev-fallback documentation (TimescaleDB/pgvector)
+- Priority D — RLS classification tier testing
+- Priority F — OpenTelemetry traces + correlation IDs
+- Priority F — Observability dashboards
+
+### What I Did This Session
+
+- [x] **Priority A — Parallel MC executor (ProcessPoolExecutor)**
+  - `services/sim-orchestrator/app/engine/stub.py`:
+    - Extracted `_mc_trial(args_tuple) -> dict` as a module-level picklable worker function
+    - `run_monte_carlo()` now uses `ProcessPoolExecutor(max_workers=min(4, cpu_count))` for n ≥ 10 (threshold = min valid `monte_carlo_runs`)
+    - Falls back to serial loop for n < threshold (avoids process-spawn overhead)
+    - Emits `time.monotonic`-based elapsed_ms log after every MC run (profiling hook)
+  - Added `test_parallel_mc_matches_serial_output` to `TestGoldenScenarioCalibration` in `services/sim-orchestrator/tests/test_runs.py`
+    - Validates parallel and serial paths produce identical aggregate win counts
+
+- [x] **Priority C — DB dev-fallback documentation**
+  - Created `docs/db-dev-fallback.md`:
+    - Explains TimescaleDB (hypertables) and pgvector (semantic search) are optional in dev
+    - Documents degraded behavior in `postgis/postgis:16-3.4` dev image
+    - Instructions for enabling extensions in dev (timescale/timescaledb-ha image)
+    - Production extension requirements table
+    - Schema init guard pattern used in all `db/init/` scripts
+
+- [x] **Priority D — RLS classification tier testing**
+  - Created `services/agd-shared/tests/test_classification_tiers.py` (48 tests):
+    - `TestGetUserClassification` — integer and string JWT claim mapping, missing/unknown defaults
+    - `TestClassificationAllowedLevels` — cumulative clearance per tier, superset invariant, each tier contains itself
+    - `TestEnforceClassificationCeiling` — full allowed (20 combos) and forbidden (10 combos) cross-product
+    - `test_rls_tier_visibility_matches_app_layer` — asserts app layer exactly matches DB RLS function
+  - All 48 tests pass
+
+- [x] **Priority F — OpenTelemetry traces + correlation IDs**
+  - Added `opentelemetry-api==1.25.0`, `opentelemetry-sdk==1.25.0`, `opentelemetry-instrumentation-fastapi==0.46b0` to sim-orchestrator `requirements.txt`
+  - `services/sim-orchestrator/main.py`:
+    - `_configure_otel()` sets up a TracerProvider with console exporter (dev) or OTLP HTTP exporter (if `OTEL_EXPORTER_OTLP_ENDPOINT` set and package installed)
+    - OTLP exporter is optional — import gracefully handles missing package (protobuf version conflict with sim_engine_pb2)
+    - `FastAPIInstrumentor.instrument_app(app)` auto-traces every HTTP request
+  - Added `otel_service_name` and `otel_exporter_otlp_endpoint` settings to `app/config.py`
+  - Updated `.env.example` with OTLP endpoint and Grafana password vars
+
+- [x] **Priority F — Observability dashboards**
+  - Added `monitoring/` directory structure:
+    - `monitoring/prometheus/prometheus.yml` — scrape configs for sim-orchestrator + key services
+    - `monitoring/grafana/provisioning/datasources/datasources.yml` — Prometheus + Jaeger data sources
+    - `monitoring/grafana/provisioning/dashboards/dashboards.yml` — file-based dashboard loader
+    - `monitoring/grafana/dashboards/sim-orchestrator.json` — Grafana dashboard with 7 panels: request rate, p50/p95 latency, error rate %, active runs stat, run success/error pie, event throughput, events endpoint latency
+  - Added `prometheus`, `grafana`, `jaeger` services to `docker-compose.dev.yml`:
+    - Prometheus (port 9090) + 7-day retention
+    - Grafana (port 3000) with provisioned data sources + dashboard
+    - Jaeger all-in-one (port 16686 UI, 4318 OTLP HTTP receiver)
+  - Added `prometheus_data` and `grafana_data` volumes
+  - Added `prometheus-fastapi-instrumentator==7.0.0` to sim-orchestrator `requirements.txt` — exposes `/metrics` endpoint
+
+- [x] **README.md, improvements.md, copilot.md, docs/status-matrix.md updated**
+  - improvements.md: All Priority A, C, D, F items now marked ✅
+  - README.md: Improvements roadmap fully ✅; infrastructure table + Quick Start updated with Grafana/Prometheus/Jaeger
+  - docs/status-matrix.md: All rows updated, session date bumped to Session 17
+
+### Stopping Point
+
+All items from the problem statement are now implemented:
+- ✅ Priority A — Performance hardening (profiling, parallel MC executor)
+- ✅ Priority C — DB dev-fallback documentation (TimescaleDB/pgvector)
+- ✅ Priority D — RLS classification tier testing
+- ✅ Priority F — OpenTelemetry traces and correlation IDs
+- ✅ Priority F — Observability dashboards
+
+The improvements.md has no remaining open items.

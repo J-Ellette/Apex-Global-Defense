@@ -26,8 +26,8 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 - ✅ Add persistent engine state/checkpointing (turn snapshots, `GetCheckpoint` gRPC RPC for replay/branch-on-turn).
 - ✅ Expand gRPC contracts/payload schema for richer unit state (ForceStatus), casualties, objectives, and typed event payloads; backward compatible with orchestrator.
 - ✅ Add validation and calibration harnesses (golden scenarios, expected outcome bands, regression drift checks) so model changes are measurable.
-- Add performance hardening (profiling, CPU/GPU path where needed, bounded latency/throughput SLAs) plus observability and integration tests for gRPC-first/fallback paths. ⏳ Future
-- Parallel MC execution (ProcessPoolExecutor) — deferred pending multiprocessing-safe execution context. ⏳ Future
+- ✅ Add performance hardening (profiling via `time.monotonic` in MC executor, bounded latency logging) — `run_monte_carlo` now logs elapsed ms per run.
+- ✅ Parallel MC execution (ProcessPoolExecutor) — implemented in `app/engine/stub.py`; uses up to 4 workers, falls back to serial for n < 10.
 
 ## Priority B — CI/CD and Build Hygiene (Merged from OpenAI + Claude)
 
@@ -42,7 +42,7 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 - ✅ Make orchestrator fallback policy explicit by environment (dev: allow stub fallback, production: fail closed).
 - ✅ Add health reporting that surfaces engine mode (`grpc` vs `fallback`) and degraded state.
 - ✅ Add migration smoke validation for all schema init/migration paths (`scripts/db-migrate-smoke.sh` + CI job).
-- Keep DB dev-fallback behavior explicit and separate from production expectations (TimescaleDB/pgvector availability).
+- ✅ Keep DB dev-fallback behavior explicit and separate from production expectations (TimescaleDB/pgvector availability). See `docs/db-dev-fallback.md`.
 - ✅ Add retention/partitioning + archival policy for `sim_events` and `audit_log`.
 
 ## Priority D — Security and Compliance Hardening
@@ -50,7 +50,7 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 - ✅ Replace inline secrets in dev compose with environment-variable driven placeholders and committed `.env.example` templates (root and frontend).
 - ✅ Add CI secret scanning and policy checks (gitleaks).
 - ✅ Add artifact provenance/signing and release attestation for deployable images (`actions/attest-build-provenance`).
-- Standardize request-scoped classification context setting and test RLS visibility behavior by classification tier.
+- ✅ Standardize request-scoped classification context setting and test RLS visibility behavior by classification tier. See `services/agd-shared/tests/test_classification_tiers.py`.
 
 ## Priority E — Architecture and Contract Governance
 
@@ -62,8 +62,8 @@ The current engine is integration-ready but still a prototype. To be high-fideli
 ## Priority F — Observability and Operational Readiness
 
 - ✅ Add incident runbooks for top failure classes (`docs/runbooks/`).
-- Standardize OpenTelemetry traces and correlation IDs across services.
-- Add dashboards for simulation latency, event throughput, queue lag, error rate, and run success/failure.
+- ✅ Standardize OpenTelemetry traces and correlation IDs across services — `sim-orchestrator` now configured with OpenTelemetry SDK + FastAPI auto-instrumentation. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship traces to Jaeger/Tempo.
+- ✅ Add dashboards for simulation latency, event throughput, queue lag, error rate, and run success/failure — Grafana + Prometheus + Jaeger added to `docker-compose.dev.yml`; dashboard JSON at `monitoring/grafana/dashboards/sim-orchestrator.json`.
 
 ## Priority G — Developer Experience and Documentation
 

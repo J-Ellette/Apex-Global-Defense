@@ -14,6 +14,56 @@ from app.routers import runs, scenarios
 logger = logging.getLogger("sim-orchestrator")
 
 
+# ---------------------------------------------------------------------------
+# OpenTelemetry setup — call before app is constructed so middleware can see
+# the configured TracerProvider.
+# ---------------------------------------------------------------------------
+
+def _configure_otel(app_name: str, otlp_endpoint: str) -> None:
+    """Configure the global TracerProvider.
+
+    Uses OTLP HTTP exporter when *otlp_endpoint* is set and the exporter
+    package is installed, otherwise falls back to a no-op / console exporter
+    suitable for dev.  The OTLP exporter package is optional because it
+    carries a protobuf version constraint that may conflict with other
+    services; see requirements.txt for details.
+    """
+    from opentelemetry import trace  # noqa: PLC0415
+    from opentelemetry.sdk.resources import SERVICE_NAME, Resource  # noqa: PLC0415
+    from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: PLC0415
+
+    resource = Resource(attributes={SERVICE_NAME: app_name})
+    provider = TracerProvider(resource=resource)
+
+    exporter = None
+    if otlp_endpoint:
+        try:
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter  # noqa: PLC0415
+            exporter = OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces")
+            logger.info("OpenTelemetry: OTLP HTTP exporter → %s", otlp_endpoint)
+        except ImportError:
+            logger.warning(
+                "OTEL_EXPORTER_OTLP_ENDPOINT is set but opentelemetry-exporter-otlp-proto-http "
+                "is not installed; falling back to console exporter."
+            )
+
+    if exporter is None:
+        from opentelemetry.sdk.trace.export import ConsoleSpanExporter  # noqa: PLC0415
+        exporter = ConsoleSpanExporter()
+        if not otlp_endpoint:
+            logger.debug(
+                "OpenTelemetry: console exporter active "
+                "(set OTEL_EXPORTER_OTLP_ENDPOINT to ship traces to a collector)"
+            )
+
+    provider.add_span_processor(BatchSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
+
+_configure_otel(settings.otel_service_name, settings.otel_exporter_otlp_endpoint)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     # Connect to PostgreSQL
@@ -39,6 +89,19 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# ---------------------------------------------------------------------------
+# OpenTelemetry FastAPI instrumentation — must be called before middleware so
+# that the OTel middleware wraps the outermost layer and captures all requests.
+# ---------------------------------------------------------------------------
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor  # noqa: E402
+FastAPIInstrumentor.instrument_app(app)
+
+# ---------------------------------------------------------------------------
+# Prometheus metrics — exposes /metrics for Prometheus scraping.
+# ---------------------------------------------------------------------------
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 app.add_middleware(
     CORSMiddleware,

@@ -198,6 +198,9 @@ React 18 + TypeScript (Vite)  ──►  API services (Go + Python/FastAPI)  ─
 | Keycloak | 8180 | OIDC identity provider |
 | mbtiles-server | 8081 | Self-hosted map tiles |
 | Ollama | 11434 | Local LLM (air-gap AI) |
+| Prometheus | 9090 | Metrics scraping + alerting |
+| Grafana | 3000 | Observability dashboards (sim latency, error rate, event throughput) |
+| Jaeger | 16686 | Distributed trace UI (OTLP HTTP receiver on port 4318) |
 
 ---
 
@@ -238,6 +241,9 @@ This runs `docker compose -f docker-compose.dev.yml up --build`, which:
 | `http://localhost:5173` | Frontend (React dev server) |
 | `http://localhost:8180` | Keycloak admin console |
 | `http://localhost:9200` | Elasticsearch |
+| `http://localhost:3000` | Grafana dashboards (admin / adminpass) |
+| `http://localhost:9090` | Prometheus UI |
+| `http://localhost:16686` | Jaeger trace UI |
 
 ### 3. Default credentials
 
@@ -430,7 +436,7 @@ Progress against [`improvements.md`](./improvements.md):
 | A | Simulation Engine Fidelity — expanded gRPC contract (`ForceStatus`, `terrain_preset`, `seed`) | ✅ Complete |
 | A | Simulation Engine Fidelity — Monte Carlo confidence intervals (Wilson score 95% CI) | ✅ Complete |
 | A | Simulation Engine Fidelity — calibration harness (golden scenario tests, regression drift) | ✅ Complete |
-| A | Simulation Engine Fidelity — performance hardening, parallel MC executor | ⏳ Future |
+| A | Simulation Engine Fidelity — performance hardening + parallel MC executor (`ProcessPoolExecutor`) | ✅ Complete |
 | B | CI/CD — fix stale service matrices in CI + Makefile | ✅ Complete |
 | B | CI/CD — `docker-compose.test.yml` integration test harness | ✅ Complete |
 | B | CI/CD — matrix-based multi-service image publishing | ✅ Complete |
@@ -439,15 +445,19 @@ Progress against [`improvements.md`](./improvements.md):
 | C | Runtime reliability — explicit fallback policy (dev: stub allowed, production: fail closed) | ✅ Complete |
 | C | Runtime reliability — migration smoke validation (`scripts/db-migrate-smoke.sh` + CI job) | ✅ Complete |
 | C | Data controls — retention/archival policy for `sim_events` and `audit_log` (`016_event_archival.sql`) | ✅ Complete |
+| C | DB dev-fallback documentation (TimescaleDB/pgvector) | ✅ Complete |
 | D | Security — `.env.example` templates (root + frontend) | ✅ Complete |
 | D | Security — env-var-driven secrets in `docker-compose.dev.yml` | ✅ Complete |
 | D | Security — CI secret scanning (gitleaks) | ✅ Complete |
 | D | Security — artifact provenance/build attestation (CI `attest-build-provenance`) | ✅ Complete |
+| D | RLS classification tier testing (all tiers: UNCLASS→TS_SCI, allowed + forbidden) | ✅ Complete |
 | E | Architecture — shared Python package (`services/agd-shared/`) | ✅ Complete |
 | E | Architecture — SemVer contract governance (`docs/contract-governance.md`) | ✅ Complete |
 | E | Architecture — protobuf compatibility checks in CI (`buf lint` job) | ✅ Complete |
 | E | Architecture — canonical event schema governance (`docs/contract-governance.md` §3) | ✅ Complete |
-| F | Observability — OpenTelemetry, dashboards | ⏳ Future |
+| F | Observability — OpenTelemetry SDK + FastAPI auto-instrumentation in `sim-orchestrator` | ✅ Complete |
+| F | Observability — Prometheus + Grafana + Jaeger in `docker-compose.dev.yml` | ✅ Complete |
+| F | Observability — Grafana dashboard (`monitoring/grafana/dashboards/sim-orchestrator.json`) | ✅ Complete |
 | F | Observability — incident runbooks (DB init, gRPC outage, Kafka, JWT) | ✅ Complete |
 | G | Developer experience — service-scoped make targets (`svc-test`, `svc-lint`) | ✅ Complete |
 | G | Developer experience — one-command smoke script (`scripts/smoke-test.sh`) | ✅ Complete |
