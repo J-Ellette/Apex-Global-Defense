@@ -430,15 +430,18 @@ Progress against [`improvements.md`](./improvements.md):
 | B | CI/CD — repo guard check (service list drift detection) | ✅ Complete |
 | C | Runtime reliability — health endpoint surfaces engine mode (`grpc` vs `stub`) | ✅ Complete |
 | C | Runtime reliability — explicit fallback policy (dev: stub allowed, production: fail closed) | ✅ Complete |
-| C | Runtime reliability — DB dev-fallback explicit, migration smoke validation | ⏳ Future |
+| C | Runtime reliability — migration smoke validation (`scripts/db-migrate-smoke.sh` + CI job) | ✅ Complete |
 | D | Security — `.env.example` templates (root + frontend) | ✅ Complete |
 | D | Security — env-var-driven secrets in `docker-compose.dev.yml` | ✅ Complete |
 | D | Security — CI secret scanning (gitleaks) | ✅ Complete |
-| E | Architecture — SemVer contract governance, shared Python package | ⏳ Future |
+| D | Security — artifact provenance/build attestation (CI `attest-build-provenance`) | ✅ Complete |
+| E | Architecture — shared Python package (`services/agd-shared/`) | ✅ Complete |
+| E | Architecture — SemVer contract governance, protobuf compat checks | ⏳ Future |
 | F | Observability — OpenTelemetry, dashboards | ⏳ Future |
 | F | Observability — incident runbooks (DB init, gRPC outage, Kafka, JWT) | ✅ Complete |
 | G | Developer experience — service-scoped make targets (`svc-test`, `svc-lint`) | ✅ Complete |
 | G | Developer experience — one-command smoke script (`scripts/smoke-test.sh`) | ✅ Complete |
+| G | Developer experience — docs-status matrix (`docs/status-matrix.md`) | ✅ Complete |
 
 ### Phase 4 New Features
 

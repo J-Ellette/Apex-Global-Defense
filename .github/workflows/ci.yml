@@ -21,6 +21,16 @@ jobs:
       - name: Check service list matches services/ directory
         run: make guard-services
 
+  migrate-smoke:
+    name: Migration Smoke Validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate DB migration scripts
+        run: SKIP_DOCKER=1 bash scripts/db-migrate-smoke.sh
+
   test-go:
     name: Test Go Services
     runs-on: ubuntu-latest
@@ -208,6 +218,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     strategy:
       matrix:
         service:
@@ -241,6 +253,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push ${{ matrix.service }}
+        id: push
         uses: docker/build-push-action@v5
         with:
           context: services/${{ matrix.service }}
@@ -248,6 +261,12 @@ jobs:
           tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Attest build provenance for ${{ matrix.service }}
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/${{ matrix.service }}
+          subject-digest: ${{ steps.push.outputs.digest }}
 
   generate-sbom:
     name: Generate SBOM
