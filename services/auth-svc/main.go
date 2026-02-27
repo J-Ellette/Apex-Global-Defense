@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -42,8 +43,16 @@ func main() {
 	}
 	defer log.Sync() //nolint:errcheck
 
-	// Database
-	db, err := sqlx.Connect("postgres", cfg.DatabaseURL)
+	// Database — retry up to 10 times with linear backoff to survive slow container DNS.
+	var db *sqlx.DB
+	for i := 1; i <= 10; i++ {
+		db, err = sqlx.Connect("postgres", cfg.DatabaseURL)
+		if err == nil {
+			break
+		}
+		log.Warn("database not ready, retrying", zap.Int("attempt", i), zap.Error(err))
+		time.Sleep(time.Duration(i) * time.Second)
+	}
 	if err != nil {
 		log.Fatal("failed to connect to database", zap.Error(err))
 	}
@@ -82,6 +91,15 @@ func main() {
 	}
 
 	r := gin.New()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+		},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		MaxAge:       12 * time.Hour,
+	}))
 	r.Use(gin.Recovery())
 	r.Use(requestLogger(log))
 

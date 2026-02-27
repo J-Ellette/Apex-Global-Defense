@@ -14,8 +14,27 @@ const BADGE_CONFIG: Record<ClassificationLevel, { label: string; className: stri
   TS_SCI:     { label: 'TS//SCI',    className: 'bg-yellow-800 text-yellow-100 border-yellow-600' },
 }
 
+const NUMERIC_CLASSIFICATION_MAP: Record<number, ClassificationLevel> = {
+  0: 'UNCLASS',
+  1: 'FOUO',
+  2: 'SECRET',
+  3: 'TOP_SECRET',
+  4: 'TS_SCI',
+}
+
+function normalizeClassificationLevel(level: ClassificationLevel | number): ClassificationLevel {
+  if (typeof level === 'number') {
+    return NUMERIC_CLASSIFICATION_MAP[level] ?? 'UNCLASS'
+  }
+  if (level in BADGE_CONFIG) {
+    return level
+  }
+  return 'UNCLASS'
+}
+
 export function ClassificationBadge({ level, className }: ClassificationBadgeProps) {
-  const config = BADGE_CONFIG[level]
+  const normalized = normalizeClassificationLevel(level as ClassificationLevel | number)
+  const config = BADGE_CONFIG[normalized]
   return (
     <span
       className={clsx(
@@ -23,7 +42,7 @@ export function ClassificationBadge({ level, className }: ClassificationBadgePro
         config.className,
         className,
       )}
-      title={`Classification: ${level}`}
+      title={`Classification: ${normalized}`}
     >
       {config.label}
     </span>

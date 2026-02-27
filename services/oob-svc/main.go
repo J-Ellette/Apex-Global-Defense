@@ -41,7 +41,16 @@ func main() {
 	}
 	defer log.Sync() //nolint:errcheck
 
-	db, err := sqlx.Connect("postgres", cfg.DatabaseURL)
+	// Database — retry up to 10 times with linear backoff to survive slow container DNS.
+	var db *sqlx.DB
+	for i := 1; i <= 10; i++ {
+		db, err = sqlx.Connect("postgres", cfg.DatabaseURL)
+		if err == nil {
+			break
+		}
+		log.Warn("database not ready, retrying", zap.Int("attempt", i), zap.Error(err))
+		time.Sleep(time.Duration(i) * time.Second)
+	}
 	if err != nil {
 		log.Fatal("failed to connect to database", zap.Error(err))
 	}

@@ -480,3 +480,8 @@ volumes:
   ollama_models:
   prometheus_data:
   grafana_data:
+
+networks:
+  default:
+    driver: bridge
+    enable_ipv6: false

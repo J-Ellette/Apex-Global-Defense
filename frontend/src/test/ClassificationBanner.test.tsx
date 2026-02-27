@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { ClassificationBanner } from '../../shared/components/ClassificationBanner'
+import { ClassificationBanner } from '../shared/components/ClassificationBanner'
 
 describe('ClassificationBanner', () => {
   it('renders UNCLASSIFIED banner', () => {
@@ -23,5 +23,10 @@ describe('ClassificationBanner', () => {
     expect(
       screen.getByRole('banner', { name: /FOR OFFICIAL USE ONLY/i }),
     ).toBeInTheDocument()
+  })
+
+  it('handles numeric classification values from API payloads', () => {
+    render(<ClassificationBanner level={4 as unknown as 'TS_SCI'} />)
+    expect(screen.getByText('TOP SECRET // SCI')).toBeInTheDocument()
   })
 })

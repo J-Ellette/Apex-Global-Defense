@@ -247,10 +247,11 @@ This runs `docker compose -f docker-compose.dev.yml up --build`, which:
 
 ### 3. Default credentials
 
-| Account | Username | Password |
-|---------|----------|----------|
-| App (dev) | `admin` | `adminpass` |
-| Keycloak admin | `admin` | `adminpass` |
+| Account | Username / Email | Password |
+| ------- | --------------- | -------- |
+| App — admin | `dev-admin` / `admin@agd.local` | `adminpass` |
+| App — analyst | `dev-analyst` / `analyst@agd.local` | `analystpass` |
+| Keycloak admin console | `admin` | `adminpass` |
 | PostgreSQL | `agd` | `devpass` |
 
 > **Note:** The dev JWT secret is defined in `docker-compose.dev.yml`. All services share this secret. **Never use dev credentials in production.**
@@ -324,7 +325,7 @@ npm run dev
 Set environment variables (or copy `.env.example`):
 
 ```
-VITE_AUTH_API_URL=http://localhost:8082
+VITE_API_URL=http://localhost:8082/api/v1
 VITE_OOB_API_URL=http://localhost:8083
 VITE_WS_URL=ws://localhost:8084
 VITE_SIM_API_URL=http://localhost:8085/api/v1

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,6 +34,34 @@ func (c ClassificationLevel) String() string {
 	default:
 		return "UNCLASS"
 	}
+}
+
+// Scan implements sql.Scanner so PostgreSQL ENUM strings map to ClassificationLevel ints.
+func (c *ClassificationLevel) Scan(src interface{}) error {
+	var s string
+	switch v := src.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return fmt.Errorf("ClassificationLevel.Scan: unsupported type %T", src)
+	}
+	switch s {
+	case "UNCLASS":
+		*c = UNCLASS
+	case "FOUO":
+		*c = FOUO
+	case "SECRET":
+		*c = SECRET
+	case "TOP_SECRET":
+		*c = TOP_SECRET
+	case "TS_SCI":
+		*c = TS_SCI
+	default:
+		return fmt.Errorf("ClassificationLevel.Scan: unknown value %q", s)
+	}
+	return nil
 }
 
 // Role represents an RBAC role.
