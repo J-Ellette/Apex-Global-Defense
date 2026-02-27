@@ -11,7 +11,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    hmr: {
+      host: 'localhost',
+      port: 5173,
+      protocol: 'ws',
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:8082',

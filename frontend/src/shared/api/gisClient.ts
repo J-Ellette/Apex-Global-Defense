@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const GIS_BASE_URL = import.meta.env.VITE_GIS_API_URL ?? 'http://localhost:8095/api/v1'
 

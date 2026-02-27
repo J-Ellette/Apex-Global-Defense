@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const TRAINING_BASE_URL = import.meta.env.VITE_TRAINING_API_URL ?? 'http://localhost:8096/api/v1'
 

@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const INFOOPS_BASE_URL = import.meta.env.VITE_INFOOPS_API_URL ?? 'http://localhost:8094/api/v1'
 

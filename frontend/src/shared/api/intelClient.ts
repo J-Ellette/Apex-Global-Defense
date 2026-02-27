@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const INTEL_BASE_URL = import.meta.env.VITE_INTEL_API_URL ?? 'http://localhost:8090/api/v1'
 

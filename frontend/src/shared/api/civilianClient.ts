@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const CIVILIAN_BASE_URL = import.meta.env.VITE_CIVILIAN_API_URL ?? 'http://localhost:8091/api/v1'
 

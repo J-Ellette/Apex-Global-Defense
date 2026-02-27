@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const CBRN_BASE_URL = import.meta.env.VITE_CBRN_API_URL ?? 'http://localhost:8087/api/v1'
 

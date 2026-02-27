@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '../../../app/providers/AuthProvider'
+import { useAuthStore } from '@/app/providers/AuthProvider'
 
 const ECON_BASE_URL = import.meta.env.VITE_ECON_API_URL ?? 'http://localhost:8093/api/v1'
 

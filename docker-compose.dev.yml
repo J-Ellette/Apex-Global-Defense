@@ -116,6 +116,7 @@ services:
       ENV: development
     ports:
       - "8082:8080"
+    restart: on-failure:5
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,6 +134,7 @@ services:
       ENV: development
     ports:
       - "8083:8080"
+    restart: on-failure:5
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,13 +155,14 @@ services:
       ENV: development
     ports:
       - "8085:8000"
+    restart: on-failure:5
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       sim-engine:
-        condition: service_started
+        condition: service_healthy
       auth-svc:
         condition: service_started
 
@@ -172,6 +175,13 @@ services:
       SIM_ENGINE_PORT: "50051"
     ports:
       - "50051:50051"
+    restart: on-failure:5
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 30s
 
   cyber-svc:
     build:
